@@ -124,49 +124,49 @@ def sensor_update(
     S_k = H_k @ predicted_variance @ H_k.T + R_k
     K_k = predicted_variance @ H_k.T @ np.linalg.inv(S_k)
 
-    state_ = state_ + K_k @ y_k
+    state_ = predicted_state + K_k @ y_k
     predicted_variance = (np.eye(len(x)) - K_k @ H_k) @ predicted_variance
 
     return state_, predicted_variance
 
 
 def fake_imu(state):
-    return np.array([
-        0.,
-        0.,
-        state[2],
-        state[3],
-        state[4],
-        0.
-    ])
-
     # return np.array([
     #     0.,
     #     0.,
-    #     state[2] + random.gauss(0, 0),
-    #     state[3] + random.gauss(0, 0),
-    #     state[4] + random.gauss(0, 0),
+    #     state[2],
+    #     state[3],
+    #     state[4],
     #     0.
     # ])
 
-
-def fake_enc(state):
     return np.array([
         0.,
         0.,
-        state[2],
-        state[3],
-        0.,
-        state[5]
+        state[2] + random.gauss(0, .01),
+        state[3] + random.gauss(0, .01),
+        state[4] + random.gauss(0, .1),
+        0.
     ])
+
+
+def fake_enc(state):
     # return np.array([
     #     0.,
     #     0.,
-    #     state[2] + random.gauss(0, 0),
-    #     state[3] + random.gauss(0, 0),
+    #     state[2],
+    #     state[3],
     #     0.,
     #     state[5]
     # ])
+    return np.array([
+        0.,
+        0.,
+        state[2] + random.gauss(0, .1),
+        0.,
+        0.,
+        state[5]
+    ])
 
 
 def main_loop():
@@ -188,7 +188,7 @@ def main_loop():
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0],
             [0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 1]
         ]),
