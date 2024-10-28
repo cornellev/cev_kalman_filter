@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import matplotlib.pyplot as plt
 import random
@@ -84,7 +86,7 @@ def H(x, dt, tr):
 
 # Process noise covariance (update step). Low Q value means high confidence in model
 def Q(dt):
-    return dt * np.eye(len(x)) * 0.1
+    return dt * np.eye(len(x)) * .1
 
 
 def predict(x, P, dt):
@@ -100,18 +102,11 @@ def predict(x, P, dt):
     return state, cov
 
 
-def state_update(x, P, dt):
-    x_k, P_k = predict(x, P, dt)
-
-    return x_k, P_k
-
-
 def sensor_update(
         state_,
         variance,
         sensor_state,
         sensor_mul_matrix,
-        sensor_jacobian_pre,
         sensor_variance,
         dt
 ):
@@ -121,16 +116,13 @@ def sensor_update(
 
     predicted_state, predicted_variance = predict(state_, variance, dt)
 
-    predicted_imu = h @ predicted_state
-    real_imu = sensor_state
+    predicted_sensor = h @ predicted_state
+    real_sensor = sensor_state
 
-    print("REAL: ", real_imu)
-    print("PRED: ", predicted_imu)
-
-    y_k = real_imu - predicted_imu
+    y_k = real_sensor - predicted_sensor
 
     S_k = H_k @ predicted_variance @ H_k.T + R_k
-    K_k = predicted_variance @ H_k.T @ np.linalg.pinv(S_k)
+    K_k = predicted_variance @ H_k.T @ np.linalg.inv(S_k)
 
     state_ = state_ + K_k @ y_k
     predicted_variance = (np.eye(len(x)) - K_k @ H_k) @ predicted_variance
@@ -178,13 +170,10 @@ def fake_enc(state):
 
 
 def main_loop():
-    state = x
-    variance = P
-
-    sensor_jacobian = {
-        "imu": np.array([0., 0., 1., 1., 1., 0.]),
-        "enc": np.array([0., 0., 1., 1., 0., 1.]),
-    }
+    state = copy.deepcopy(x)
+    variance = copy.deepcopy(P)
+    next_state = copy.deepcopy(x)
+    next_var = copy.deepcopy(P)
 
     sensor_mul_matrix = {
         "imu": np.array([
@@ -211,25 +200,16 @@ def main_loop():
     }
 
     sensor_variances = {
-        "imu": np.eye(len(x)) * 1.,
-        "enc": np.eye(len(x)) * 1.,
+        "imu": np.eye(len(x)) * 1,
+        "enc": np.eye(len(x)) * .1,
     }
-
-    next_state = state
-    next_var = variance
-    # for i in range(int(real_t / cycle_dt)):
-    #     next_state[5] = math.sin(i * cycle_dt / 2) * .79
-    #
-    #     next_state, next_var = predict(next_state, next_var, cycle_dt)
-    #
-    #     plt.plot(next_state[0], next_state[1], 'bo')
 
     # Simulate the state change with F and a dt of .1 100 times using matplotlib
     for i in range(int(real_t / cycle_dt)):
         seed = random.random()
 
         # Adjust steering angle
-        state[5] = math.sin(i * cycle_dt / 2) * .79
+        # state[5] = math.sin(i * cycle_dt / 2) * .79
         next_state[5] = math.sin(i * cycle_dt / 2) * .79
 
         next_state, next_var = predict(next_state, next_var, cycle_dt)
@@ -237,15 +217,12 @@ def main_loop():
 
         if seed <= .8:
             state, variance = predict(state, variance, cycle_dt)
-        elif seed <= 1.0:
-            print("REAA: ", next_state)
-
+        elif seed < .9:
             state, variance = sensor_update(
                 state,
                 variance,
                 sensor_state["imu"](next_state),
                 sensor_mul_matrix["imu"],
-                sensor_jacobian["imu"],
                 sensor_variances["imu"],
                 cycle_dt
             )
@@ -255,7 +232,6 @@ def main_loop():
                 variance,
                 sensor_state["enc"](next_state),
                 sensor_mul_matrix["enc"],
-                sensor_jacobian["enc"],
                 sensor_variances["enc"],
                 cycle_dt
             )
