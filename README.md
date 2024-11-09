@@ -1,2 +1,2 @@
 # kalman_odom
-ROS 2 package for KF-based localization (in development)
+ROS 2 package for Ackermann Model EKF-based localization (in development)

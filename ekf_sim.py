@@ -14,7 +14,7 @@ Notes:
 """
 
 cycle_dt = .01  # Constant time step
-real_t = 20  # Time to run the simulation for
+real_t = 10  # Time to run the simulation for
 
 WB = .3
 
@@ -22,7 +22,7 @@ WB = .3
 x = np.array([
         0.,  # x
         0.,  # y
-        .2,  # x'
+        1,  # x'
         0.,  # y'
         0.,  # yaw
         .79,  # steering angle
@@ -80,7 +80,9 @@ def F(x, dt):
     ])
 
 
+# Measurement jacobian matrix
 def H(x, dt, tr):
+    # `tr` is the transformation from the state space to the sensor space
     return (tr @ F(x, dt).T).T
 
 
@@ -90,6 +92,9 @@ def Q(dt):
 
 
 def predict(x, P, dt):
+    # P = current variance
+    # x = current state
+
     F_k = F(x, dt)
     Q_k = Q(dt)
 
@@ -131,15 +136,6 @@ def sensor_update(
 
 
 def fake_imu(state):
-    # return np.array([
-    #     0.,
-    #     0.,
-    #     state[2],
-    #     state[3],
-    #     state[4],
-    #     0.
-    # ])
-
     return np.array([
         0.,
         0.,
@@ -151,14 +147,6 @@ def fake_imu(state):
 
 
 def fake_enc(state):
-    # return np.array([
-    #     0.,
-    #     0.,
-    #     state[2],
-    #     state[3],
-    #     0.,
-    #     state[5]
-    # ])
     return np.array([
         0.,
         0.,
@@ -208,14 +196,13 @@ def main_loop():
     for i in range(int(real_t / cycle_dt)):
         seed = random.random()
 
-        # Adjust steering angle
-        # state[5] = math.sin(i * cycle_dt / 2) * .79
+        # Adjust steering angle continuously
         next_state[5] = math.sin(i * cycle_dt / 2) * .79
 
         next_state, next_var = predict(next_state, next_var, cycle_dt)
         plt.plot(next_state[0], next_state[1], 'bo')
 
-        if seed <= .8:
+        if seed < .8:
             state, variance = predict(state, variance, cycle_dt)
         elif seed < .9:
             state, variance = sensor_update(
