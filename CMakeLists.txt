@@ -16,13 +16,17 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
-include_directories(include)
+add_library(update_model
+    src/update_model.cpp
+    include/update_model.h
+)
+ament_target_dependencies(update_model Eigen3)
+
+include_directories(update_model include)
 
 add_executable(ackermann_ekf src/ackermann_ekf.cpp)
+target_link_libraries(ackermann_ekf update_model)
 ament_target_dependencies(ackermann_ekf rclcpp sensor_msgs std_msgs Eigen3)
-
-# target_include_directories(kalman_odom PRIVATE ${EIGEN3_INCLUDE_DIR})
-# target_include_directories(ackermann_ekf PRIVATE include)
 
 install(TARGETS
   ackermann_ekf

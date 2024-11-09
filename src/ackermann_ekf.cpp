@@ -10,7 +10,6 @@ using namespace Eigen;
 class AckermannEkfNode : public rclcpp::Node {
   public:
     AckermannEkfNode() : Node("AckermannEkfNode") {}
-
   // private:
 
 };
