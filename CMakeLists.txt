@@ -8,12 +8,18 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+
+find_package(Eigen3 REQUIRED)
+
+# ROS
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 add_executable(ackermann_ekf src/ackermann_ekf.cpp)
-ament_target_dependencies(ackermann_ekf rclcpp sensor_msgs std_msgs)
+ament_target_dependencies(ackermann_ekf rclcpp sensor_msgs std_msgs Eigen3)
+
+# target_include_directories(kalman_odom PRIVATE ${EIGEN3_INCLUDE_DIR})
 
 install(TARGETS
   ackermann_ekf
