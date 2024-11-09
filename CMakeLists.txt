@@ -16,14 +16,21 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
+include_directories(include)
+
 add_executable(ackermann_ekf src/ackermann_ekf.cpp)
 ament_target_dependencies(ackermann_ekf rclcpp sensor_msgs std_msgs Eigen3)
 
 # target_include_directories(kalman_odom PRIVATE ${EIGEN3_INCLUDE_DIR})
+# target_include_directories(ackermann_ekf PRIVATE include)
 
 install(TARGETS
   ackermann_ekf
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install (DIRECTORY include/
+  DESTINATION share/${PROJECT_NAME}/include
 )
 
 install(DIRECTORY launch/
