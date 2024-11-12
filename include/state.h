@@ -19,43 +19,62 @@ where tau = steering_angle
 
 static constexpr int S = 18;
 
-#define x_          state[0]
-#define y_          state[1]
-#define z_          state[2]
-#define roll_       state[3]
-#define pitch_      state[4]
-#define yaw_        state[5]
-#define d_x_        state[6]
-#define d_y_        state[7]
-#define d_z_        state[8]
-#define d_roll_     state[9]
-#define d_pitch_    state[10]
-#define d_yaw_      state[11]
-#define d2_x_       state[12]
-#define d2_y_       state[13]
-#define d2_z_       state[14]
-#define tau_        state[15]
-#define d_tau_      state[16]
-#define d2_tau_     state[17]
+#define x__          0
+#define y__          1
+#define z__          2
+#define roll__       3
+#define pitch__      4
+#define yaw__        5
+#define d_x__        6
+#define d_y__        7
+#define d_z__        8
+#define d_roll__     9
+#define d_pitch__    10
+#define d_yaw__      11
+#define d2_x__       12
+#define d2_y__       13
+#define d2_z__       14
+#define tau__        15
+#define d_tau__      16
+#define d2_tau__     17
 
-#define _x_         this->state[0]
-#define _y_         this->state[1]
-#define _z_         this->state[2]
-#define _roll_      this->state[3]
-#define _pitch_     this->state[4]
-#define _yaw_       this->state[5]
-#define _d_x_       this->state[6]
-#define _d_y_       this->state[7]
-#define _d_z _      this->state[8]
-#define _d_roll_    this->state[9]
-#define _d_pitch_   this->state[10]
-#define _d_yaw_     this->state[11]
-#define _d2_x_      this->state[12]
-#define _d2_y_      this->state[13]
-#define _d2_z_      this->state[14]
-#define _tau_       this->state[15]
-#define _d_tau_     this->state[16]
-#define _d2_tau_    this->state[17]
+#define x_          state[ x__      ]
+#define y_          state[ y__      ]
+#define z_          state[ z__      ]
+#define roll_       state[ roll__   ]
+#define pitch_      state[ pitch__  ]
+#define yaw_        state[ yaw__    ]
+#define d_x_        state[ d_x__    ]
+#define d_y_        state[ d_y__    ]
+#define d_z_        state[ d_z__    ]
+#define d_roll_     state[ d_roll__ ]
+#define d_pitch_    state[ d_pitch__]
+#define d_yaw_      state[ d_yaw__  ]
+#define d2_x_       state[ d2_x__   ]
+#define d2_y_       state[ d2_y__   ]
+#define d2_z_       state[ d2_z__   ]
+#define tau_        state[ tau__    ]
+#define d_tau_      state[ d_tau__  ]
+#define d2_tau_     state[ d2_tau__ ]
+
+#define _x_         this->x_          
+#define _y_         this->y_          
+#define _z_         this->z_          
+#define _roll_      this->roll_       
+#define _pitch_     this->pitch_      
+#define _yaw_       this->yaw_        
+#define _d_x_       this->d_x_        
+#define _d_y_       this->d_y_        
+#define _d_z _      this->d_z_        
+#define _d_roll_    this->d_roll_     
+#define _d_pitch_   this->d_pitch_    
+#define _d_yaw_     this->d_yaw_      
+#define _d2_x_      this->d2_x_       
+#define _d2_y_      this->d2_y_       
+#define _d2_z_      this->d2_z_       
+#define _tau_       this->tau_        
+#define _d_tau_     this->d_tau_      
+#define _d2_tau_    this->d2_tau_     
 
 // V represents a Vector of the state size
 using V = Vector<double, S>;

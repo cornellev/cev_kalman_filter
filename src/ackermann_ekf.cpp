@@ -12,6 +12,7 @@ class AckermannModel : public UpdateModel {
 
   private:
     double wheelbase;
+    M multiplier;
 
   public:
     AckermannModel(
@@ -21,6 +22,13 @@ class AckermannModel : public UpdateModel {
       double wheelbase
     ) : UpdateModel(state, covariance, process_covariance) {
       this->wheelbase = wheelbase;
+
+      multiplier(x__, x__) = 1;
+      multiplier(y__, y__) = 1;
+      multiplier(d_x__, d_x__) = 1;
+      multiplier(d_y__, d_y__) = 1;
+      multiplier(yaw__, yaw__) = 1;
+      multiplier(tau__, tau__) = 1;
     }
 
     V update_step(V state, double dt) {
@@ -39,51 +47,53 @@ class AckermannModel : public UpdateModel {
       return new_state;
     }
 
-    // M update_jacobian(V state, double dt) {
-    //   M F_k;
+    M update_jacobian(V state, double dt) {
+      M F_k = MatrixXd::Identity(S, S);
 
-    //   double x = state[0];
-    //   double y = state[1];
-    //   double d_x = state[6];
-    //   double d_y = state[7];
-    //   double yaw = state[5];
-    //   double tau = state[15];
+      double p_yaw_dx = dt * sin(tau_) / wheelbase;
+      double p_yaw_tau = dt * d_x_ * cos(tau_) / wheelbase;
 
-    //   double p_yaw_dx = dt * sin(tau) / wheelbase;
-    //   double p_yaw_tau = dt * d_x * cos(tau) / wheelbase;
-      
-    //   double p_x_dx = dt * cos(yaw + tau);
-    //   double p_x_yaw = -dt * d_x * sin(yaw + tau);
-    //   double p_x_tau = -dt * d_x * sin(yaw + tau);
+      double p_x_dx = dt * cos(yaw_ + tau_);
+      double p_x_yaw = -dt * d_x_ * sin(yaw_ + tau_);
+      double p_x_tau = -dt * d_x_ * sin(yaw_ + tau_);
 
-    //   double p_y_dx = dt * sin(yaw + tau);
-    //   double p_y_yaw = dt * d_x * cos(yaw + tau);
-    //   double p_y_tau = dt * d_x * cos(yaw + tau);
+      double p_y_dx = dt * sin(yaw_ + tau_);
+      double p_y_yaw = dt * d_x_ * cos(yaw_ + tau_);
+      double p_y_tau = dt * d_x_ * cos(yaw_ + tau_);
 
-    //   //     x   y    x'        y'   yaw        tau
-    //   F_k << 1., 0.,  p_x_dx,   0.,  p_x_yaw,   p_x_tau,
-    //          0., 1.,  p_y_dx,   0.,  p_y_yaw,   p_y_tau,
-    //          0., 0.,  1.,       0.,  0.,        0.,
-    //          0., 0.,  0.,       1.,  0.,        0.,
-    //          0., 0.,  p_yaw_dx, 0.,  1.,        p_yaw_tau,
-    //          0., 0.,  0.,       0.,  0.,        1.;
+      F_k(x__, d_x__) = p_x_dx;
+      F_k(x__, yaw__) = p_x_yaw;
+      F_k(x__, tau__) = p_x_tau;
 
-    //   return F_k;
-    // }
+      F_k(y__, d_x__) = p_y_dx;
+      F_k(y__, yaw__) = p_y_yaw;
+      F_k(y__, tau__) = p_y_tau;
+
+      F_k(yaw__, d_x__) = p_yaw_dx;
+      F_k(yaw__, tau__) = p_yaw_tau;
+
+      return F_k;
+    }
+
+    M state_matrix_multiplier() {
+      return multiplier;
+    }
 };
 
 class AckermannEkfNode : public rclcpp::Node {
   public:
-    AckermannEkfNode() : Node("AckermannEkfNode") {}
+    AckermannEkfNode() : Node("AckermannEkfNode") {
+      model.set_state(VectorXd::Zero(S));
+    }
 
 
-  // private:
-    // AckermannModel model = AckermannModel(
-    //   Vector<double, 6> {0., 0., 0., 0., 0., 0.},
-    //   Matrix<double, 6, 6>::Identity() * .1,
-    //   Matrix<double, 6, 6>::Identity() * .1,
-    //   1.0
-    // );
+  private:
+    AckermannModel model = AckermannModel(
+      V::Zero(),
+      M::Identity() * .1,
+      M::Identity() * .1,
+      1.0
+    );
 };
 
 int main(int argc, char *argv[]) {
