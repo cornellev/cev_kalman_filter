@@ -82,39 +82,49 @@ using V = Vector<double, S>;
 using M = Matrix<double, S, S>;
 
 class HasState {
+    protected:
+        V state;
+        M covariance;
+
     public:
+        /**
+         * Base class for a model with a state and covariance
+         */
+        HasState(V state, M covariance);
+
         /**
          * Current state of the sensor
          *
          * @return Current sensor state
          */
-        virtual V get_state() = 0;
+        V get_state();
     
         /**
          * Covariance of the sensor
          *
          * @return Sensor covariance
          */
-        virtual M get_covariance() = 0;
+        M get_covariance();
     
         /**
          * Set the state of the sensor
          *
          * @param state New sensor state
          */
-        virtual void set_state(V state) = 0;
+        void set_state(V state);
 
         /**
          * Set the covariance of the sensor
          *
          * @param covariance New sensor covariance
          */
-        virtual void set_covariance(M covariance) = 0;
+        void set_covariance(M covariance);
     
         /**
-         * Matrix that, when left multiplied by a state vector, gives a state matrix in the form of this model.
+         * Matrix that, when left multiplied by a state vector, 
+         * gives a state matrix in the form of this model.
          * 
          * @return Multiplier matrix
          */
-        virtual M state_matrix_multiplier() = 0;
+        virtual M state_matrix_multiplier();
 };

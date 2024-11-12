@@ -5,8 +5,6 @@
 
 class UpdateModel : public HasState {
   private:
-    V state;
-    M covariance;
     M base_process_covariance;
 
   public:
@@ -93,34 +91,6 @@ class UpdateModel : public HasState {
      * @return Multiplier matrix
      */
     virtual M state_matrix_multiplier();
-
-    /**
-     * Current state of the model
-     *
-     * @return Current model state
-     */
-    V get_state();
-
-    /**
-     * Current covariance of the model
-     *
-     * @return Current model covariance
-     */
-    M get_covariance();
-
-    /**
-     * Set the state of the model
-     *
-     * @param state New model state
-     */
-    void set_state(V state);
-
-    /**
-     * Set the covariance of the model
-     *
-     * @param covariance New model covariance
-     */
-    void set_covariance(M covariance);
 
     // Aliases
     inline V x() { return state; };

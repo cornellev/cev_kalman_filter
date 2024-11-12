@@ -5,9 +5,7 @@ UpdateModel::UpdateModel(
   V state,
   M covariance,
   M process_covariance
-) {
-  this->state = state;
-  this->covariance = covariance;
+) : HasState(state, covariance) {
   this->base_process_covariance = process_covariance;
 }
 
@@ -65,20 +63,4 @@ M UpdateModel::sensor_jacobian(
 
 M UpdateModel::state_matrix_multiplier() {
   return MatrixXd::Identity(S, S);
-}
-
-V UpdateModel::get_state() {
-  return state;
-}
-
-M UpdateModel::get_covariance() {
-  return covariance;
-}
-
-void UpdateModel::set_state(V state) {
-  this->state = state;
-}
-
-void UpdateModel::set_covariance(M covariance) {
-  this->covariance = covariance;
 }
