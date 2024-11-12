@@ -1,52 +1,49 @@
 #include "update_model.h"
 
-template <int S>
-UpdateModel<S>::UpdateModel(
-  Vector<double, S> state,
-  Matrix<double, S, S> covariance,
-  Matrix<double, S, S> process_covariance
+
+UpdateModel::UpdateModel(
+  V state,
+  M covariance,
+  M process_covariance
 ) {
   this->state = state;
   this->covariance = covariance;
   this->base_process_covariance = process_covariance;
 }
 
-template <int S>
-std::pair<Vector<double, S>, Matrix<double, S, S>> UpdateModel<S>::predict(double dt) {
-  Matrix<double, S, S> F_k = update_jacobian(state, dt);
-  Matrix<double, S, S> Q_k = process_covariance(dt);
+std::pair<V, M> UpdateModel::predict(double dt) {
+  M F_k = update_jacobian(state, dt);
+  M Q_k = process_covariance(dt);
 
   return std::make_pair(update_step(state, dt), F_k * covariance * F_k.transpose() + Q_k);
 }
 
-template <int S>
-void UpdateModel<S>::update(double dt) {
-  std::pair<Vector<double, S>, Matrix<double, S, S>> prediction = predict(dt);
+void UpdateModel::update(double dt) {
+  std::pair<V, M> prediction = predict(dt);
   state = prediction.first;
   covariance = prediction.second;
 }
 
-template <int S>
-void UpdateModel<S>::sensor_update(
-  Vector<double, S> sensor_state,
-  Matrix<double, S, S> sensor_variance,
-  Matrix<double, S, S> sensor_transformation,
+void UpdateModel::sensor_update(
+  V sensor_state,
+  M sensor_variance,
+  M sensor_transformation,
   double dt
 ) {
-  std::pair<Vector<double, S>, Matrix<double, S, S>> prediction = predict(dt);
-  Vector<double, S> state = prediction.first;
-  Matrix<double, S, S> covariance = prediction.second;
+  std::pair<V, M> prediction = predict(dt);
+  V state = prediction.first;
+  M covariance = prediction.second;
 
-  Matrix<double, S, S> H_k = sensor_jacobian(state, dt, sensor_transformation);
-  Matrix<double, S, S> R_k = sensor_variance;
+  M H_k = sensor_jacobian(state, dt, sensor_transformation);
+  M R_k = sensor_variance;
 
-  Vector<double, S> predicted_sensor = sensor_transformation * state;
-  Vector<double, S> real_sensor = sensor_state;
+  V predicted_sensor = sensor_transformation * state;
+  V real_sensor = sensor_state;
 
-  Vector<double, S> y_k = real_sensor - predicted_sensor;
+  V y_k = real_sensor - predicted_sensor;
 
-  Matrix<double, S, S> S_k = H_k * covariance * H_k.transpose() + R_k;
-  Matrix<double, S, S> K_k = covariance * H_k.transpose() * S_k.inverse();
+  M S_k = H_k * covariance * H_k.transpose() + R_k;
+  M K_k = covariance * H_k.transpose() * S_k.inverse();
 
   state = state + K_k * y_k;
   covariance = (
@@ -54,26 +51,34 @@ void UpdateModel<S>::sensor_update(
   ) - K_k * H_k) * covariance;
 }
 
-template <int S>
-Matrix<double, S, S> UpdateModel<S>::process_covariance(double dt) {
+M UpdateModel::process_covariance(double dt) {
   return base_process_covariance * dt;
 }
 
-template <int S>
-Matrix<double, S, S> UpdateModel<S>::sensor_jacobian(
-  Vector<double, S> state,
+M UpdateModel::sensor_jacobian(
+  V state,
   double dt,
-  Matrix<double, S, S> sensor_transformation
+  M sensor_transformation
 ) {
   return update_jacobian(state, dt) * sensor_transformation;
 }
 
-template <int S>
-Matrix<double, S, S> UpdateModel<S>::get_state() {
+M UpdateModel::state_matrix_multiplier() {
+  return MatrixXd::Identity(S, S);
+}
+
+V UpdateModel::get_state() {
   return state;
 }
 
-template <int S>
-Matrix<double, S, S> UpdateModel<S>::get_covariance() {
+M UpdateModel::get_covariance() {
   return covariance;
+}
+
+void UpdateModel::set_state(V state) {
+  this->state = state;
+}
+
+void UpdateModel::set_covariance(M covariance) {
+  this->covariance = covariance;
 }

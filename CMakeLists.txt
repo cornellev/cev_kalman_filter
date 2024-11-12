@@ -22,10 +22,25 @@ add_library(update_model
 )
 ament_target_dependencies(update_model Eigen3)
 
+add_library(state
+    src/state.cpp
+    include/state.h
+)
+ament_target_dependencies(state Eigen3)
+
+add_library(sensor
+    src/sensor.cpp
+    include/sensor.h
+)
+
+ament_target_dependencies(sensor Eigen3)
+
 include_directories(update_model include)
+include_directories(state include)
+include_directories(sensor include)
 
 add_executable(ackermann_ekf src/ackermann_ekf.cpp)
-target_link_libraries(ackermann_ekf update_model)
+target_link_libraries(ackermann_ekf update_model state sensor)
 ament_target_dependencies(ackermann_ekf rclcpp sensor_msgs std_msgs Eigen3)
 
 install(TARGETS
