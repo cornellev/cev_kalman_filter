@@ -3,9 +3,9 @@
 #include <cmath>
 
 #include "update_model.h"
+#include "sensor.h"
 
 using std::placeholders::_1;
-using namespace Eigen;
 
 class AckermannModel : public UpdateModel {
   // State: [x, y, x', y', yaw, steering_angle]
@@ -80,12 +80,40 @@ class AckermannModel : public UpdateModel {
     }
 };
 
-class AckermannEkfNode : public rclcpp::Node {
+class IMUSensor : public Sensor {
+  private:
+    M multiplier;
+
   public:
-    AckermannEkfNode() : Node("AckermannEkfNode") {
-      model.set_state(VectorXd::Zero(S));
+    IMUSensor(V state, M covariance) : Sensor(state, covariance) {
+      multiplier(d_x__, d_x__) = 1;
+      multiplier(d_y__, d_y__) = 1;
+      multiplier(yaw__, yaw__) = 1;
     }
 
+    M state_matrix_multiplier() {
+      return multiplier;
+    }
+};
+
+class OdomSensor : public Sensor {
+  private:
+    M multiplier;
+
+  public:
+    OdomSensor(V state, M covariance) : Sensor(state, covariance) {
+      multiplier(d_x__, d_x__) = 1;
+      multiplier(tau__, tau__) = 1;
+    }
+
+    M state_matrix_multiplier() {
+      return multiplier;
+    }
+};
+
+class AckermannEkfNode : public rclcpp::Node {
+  public:
+    AckermannEkfNode() : Node("AckermannEkfNode") {}
 
   private:
     AckermannModel model = AckermannModel(
@@ -93,6 +121,16 @@ class AckermannEkfNode : public rclcpp::Node {
       M::Identity() * .1,
       M::Identity() * .1,
       1.0
+    );
+
+    IMUSensor imu = IMUSensor(
+      V::Zero(),
+      M::Identity() * .1
+    );
+
+    OdomSensor odom = OdomSensor(
+      V::Zero(),
+      M::Identity() * .1
     );
 };
 
