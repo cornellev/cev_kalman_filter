@@ -18,7 +18,12 @@ class RosSensor : public Sensor {
                 0,
                 false,
                 dependents
-            )
+            ) {}
+
+        void msg_handler(T msg) {
+            msg_update(msg);
+            update_dependents();
+        }
 
         virtual void msg_update(T msg) = 0;
 
