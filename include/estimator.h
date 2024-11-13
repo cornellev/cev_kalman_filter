@@ -81,16 +81,24 @@ using V = Vector<double, S>;
 // M represents a matrix of state x state size
 using M = Matrix<double, S, S>;
 
-class HasState {
+class Estimator {
     protected:
         V state;
         M covariance;
 
+        double last_update_time;
+        bool initialized = false;
+
     public:
         /**
          * Base class for a model with a state and covariance
+         * 
+         * @param state Start state
+         * @param covariance Start covariance
+         * @param last_update_time Time of last update
+         * @param initialized Whether the model has been initialized
          */
-        HasState(V state, M covariance);
+        Estimator(V state, M covariance, double last_update_time = 0, bool initialized = false);
 
         /**
          * Current state of the sensor
@@ -111,7 +119,7 @@ class HasState {
          *
          * @param state New sensor state
          */
-        void set_state(V state);
+        void set_state(V state, double time);
 
         /**
          * Set the covariance of the sensor
@@ -119,6 +127,20 @@ class HasState {
          * @param covariance New sensor covariance
          */
         void set_covariance(M covariance);
+
+        /**
+         * Get the time of the last update
+         * 
+         * @return Time of last update
+         */
+        double get_last_update_time();
+
+        /**
+         * Get whether the model has been initialized
+         * 
+         * @return Whether the model has been initialized
+         */
+        bool is_initialized();
     
         /**
          * Matrix that, when left multiplied by a state vector, 

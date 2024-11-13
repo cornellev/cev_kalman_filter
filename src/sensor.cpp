@@ -1,7 +1,9 @@
 #include "sensor.h"
 
-Sensor::Sensor(V state, M covariance) : HasState(state, covariance) {}
-
-M Sensor::state_matrix_multiplier() {
-  return MatrixXd::Identity(S, S);
-}
+Sensor::Sensor(
+    V state, 
+    M covariance,
+    double last_update_time,
+    bool initialized,
+    std::vector<Listener> dependents
+) : Updater(state, covariance, last_update_time, initialized, dependents) {};

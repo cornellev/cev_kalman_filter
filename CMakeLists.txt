@@ -16,31 +16,40 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
-add_library(update_model
-    src/update_model.cpp
-    include/update_model.h
+add_library(estimator
+    src/estimator.cpp
+    include/estimator.h
 )
-ament_target_dependencies(update_model Eigen3)
+ament_target_dependencies(estimator Eigen3)
 
-add_library(state
-    src/state.cpp
-    include/state.h
+add_library(model
+    src/model.cpp
+    include/model.h
 )
-ament_target_dependencies(state Eigen3)
 
 add_library(sensor
     src/sensor.cpp
     include/sensor.h
 )
 
-ament_target_dependencies(sensor Eigen3)
+add_library(updateable
+    src/updateable.cpp
+    include/updateable.h
+)
 
-include_directories(update_model include)
-include_directories(state include)
+add_library(updater
+    src/updater.cpp
+    include/updater.h
+)
+
+include_directories(estimator include)
+include_directories(model include)
 include_directories(sensor include)
+include_directories(updateable include)
+include_directories(updater include)
 
 add_executable(ackermann_ekf src/ackermann_ekf.cpp)
-target_link_libraries(ackermann_ekf update_model state sensor)
+target_link_libraries(ackermann_ekf estimator model sensor updateable updater)
 ament_target_dependencies(ackermann_ekf rclcpp sensor_msgs std_msgs Eigen3)
 
 install(TARGETS

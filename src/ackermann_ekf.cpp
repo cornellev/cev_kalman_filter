@@ -2,12 +2,12 @@
 #include <eigen3/Eigen/Dense>
 #include <cmath>
 
-#include "update_model.h"
 #include "sensor.h"
+#include "model.h"
 
 using std::placeholders::_1;
 
-class AckermannModel : public UpdateModel {
+class AckermannModel : public Model {
   // State: [x, y, x', y', yaw, steering_angle]
 
   private:
@@ -20,7 +20,7 @@ class AckermannModel : public UpdateModel {
       M covariance,
       M process_covariance,
       double wheelbase
-    ) : UpdateModel(state, covariance, process_covariance) {
+    ) : Model(state, covariance, process_covariance) {
       this->wheelbase = wheelbase;
 
       multiplier(x__, x__) = 1;
@@ -31,7 +31,9 @@ class AckermannModel : public UpdateModel {
       multiplier(tau__, tau__) = 1;
     }
 
-    V update_step(V state, double dt) {
+    V update_step(double time) {
+      double dt = time - last_update_time;
+
       float d_yaw = d_x_ * sin(tau_) / wheelbase * dt;
       float new_yaw = yaw_ + d_yaw;
 
@@ -47,7 +49,9 @@ class AckermannModel : public UpdateModel {
       return new_state;
     }
 
-    M update_jacobian(V state, double dt) {
+    M update_jacobian(double time) {
+      double dt = time - last_update_time;
+
       M F_k = MatrixXd::Identity(S, S);
 
       double p_yaw_dx = dt * sin(tau_) / wheelbase;
@@ -85,7 +89,17 @@ class IMUSensor : public Sensor {
     M multiplier;
 
   public:
-    IMUSensor(V state, M covariance) : Sensor(state, covariance) {
+    IMUSensor(
+      V state, 
+      M covariance, 
+      std::vector<Listener> dependents
+    ) : Sensor(
+      state, 
+      covariance,
+      0,
+      false,
+      dependents
+      ) {
       multiplier(d_x__, d_x__) = 1;
       multiplier(d_y__, d_y__) = 1;
       multiplier(yaw__, yaw__) = 1;
@@ -101,7 +115,17 @@ class OdomSensor : public Sensor {
     M multiplier;
 
   public:
-    OdomSensor(V state, M covariance) : Sensor(state, covariance) {
+    OdomSensor(
+      V state, 
+      M covariance, 
+      std::vector<Listener> dependents
+    ) : Sensor(
+      state, 
+      covariance,
+      0,
+      false,
+      dependents
+    ) {
       multiplier(d_x__, d_x__) = 1;
       multiplier(tau__, tau__) = 1;
     }
@@ -125,12 +149,14 @@ class AckermannEkfNode : public rclcpp::Node {
 
     IMUSensor imu = IMUSensor(
       V::Zero(),
-      M::Identity() * .1
+      M::Identity() * .1,
+      {std::make_shared<AckermannModel>(model)}
     );
 
     OdomSensor odom = OdomSensor(
       V::Zero(),
-      M::Identity() * .1
+      M::Identity() * .1,
+      {std::make_shared<AckermannModel>(model)}
     );
 };
 
