@@ -26,8 +26,6 @@ class Updater : public Estimator {
      */
     void bind_to(Listener model);
 
-    void update_state(V state, double time);
-
     /**
      * Update all bound models
      * 

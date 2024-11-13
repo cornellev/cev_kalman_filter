@@ -42,14 +42,20 @@ add_library(updater
     include/updater.h
 )
 
+add_library(ros_sensor
+    src/ros_sensor.cpp
+    include/ros_sensor.h
+)
+
 include_directories(estimator include)
 include_directories(model include)
 include_directories(sensor include)
 include_directories(updateable include)
 include_directories(updater include)
+include_directories(ros_sensor include)
 
 add_executable(ackermann_ekf src/ackermann_ekf.cpp)
-target_link_libraries(ackermann_ekf estimator model sensor updateable updater)
+target_link_libraries(ackermann_ekf estimator model sensor updateable updater ros_sensor)
 ament_target_dependencies(ackermann_ekf rclcpp sensor_msgs std_msgs Eigen3)
 
 install(TARGETS

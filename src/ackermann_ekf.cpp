@@ -2,8 +2,10 @@
 #include <eigen3/Eigen/Dense>
 #include <cmath>
 
-#include "sensor.h"
 #include "model.h"
+#include "ros_sensor.h"
+
+#include "sensor_msgs/msg/imu.hpp"
 
 using std::placeholders::_1;
 
@@ -84,33 +86,30 @@ class AckermannModel : public Model {
     }
 };
 
-class IMUSensor : public Sensor {
-  private:
-    M multiplier;
-
+class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {  
   public:
     IMUSensor(
-      V state, 
+      V state,
       M covariance, 
       std::vector<Listener> dependents
-    ) : Sensor(
+    ) : RosSensor<sensor_msgs::msg::Imu>(
       state, 
       covariance,
       0,
       false,
       dependents
-      ) {
+    ) {
       multiplier(d_x__, d_x__) = 1;
       multiplier(d_y__, d_y__) = 1;
       multiplier(yaw__, yaw__) = 1;
     }
 
-    M state_matrix_multiplier() {
-      return multiplier;
+    void msg_update(sensor_msgs::msg::Imu msg) {
+      // Update state with IMU data
     }
 };
 
-class OdomSensor : public Sensor {
+class OdomSensor : public RosSensor<sensor_msgs::msg::Imu> {
   private:
     M multiplier;
 

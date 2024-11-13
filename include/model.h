@@ -19,7 +19,7 @@ class Model : public Updateable, public Updater {
     /**
      * Perform a model update step on `state` with time `dt`.
      *
-     * @param dt Time to predict to
+     * @param time Time to predict to
      *
      * @return Updated system state
     */
@@ -36,7 +36,8 @@ class Model : public Updateable, public Updater {
 
     /**
      * Transformed version of the model Jacobian matrix for the state of a given sensor.
-     * @param estimate Sensor estimate
+     * 
+     * @param estimate New sensor estimate
      *
      * @return Sensor-specific model Jacobian matrix of state update step
      */
@@ -67,6 +68,7 @@ class Model : public Updateable, public Updater {
      * @param base_process_covariance Process covariance over time
      * @param last_update_time Time of last update
      * @param initialized Whether the model has been initialized
+     * @param dependents Models that depend on this model
      * 
      */
     Model(
@@ -87,10 +89,7 @@ class Model : public Updateable, public Updater {
     /**
      * Update the state/covariance with a sensor estimate.
      *
-     * @param sensor_state Estimated state from sensor
-     * @param sensor_variance Estimated variance of sensor
-     * @param sensor_transformation Transformation from model state to sensor
-     * @param dt Time elapsed since last state update
+     * @param estimate New sensor estimate
      */
     void estimate_update(
       Estimator estimate
