@@ -1,11 +1,14 @@
 #pragma once
 
 #include <utility>
-#include "updater.h"
+#include <memory>
+#include "estimator.h"
 
-class Model : public Updateable, public Updater {
+class Model : public Estimator {
   protected:
     M base_process_covariance;
+
+    std::vector<std::shared_ptr<Model>> models;
 
     /**
      * Next state and covariance without adjusting with a sensor update.
@@ -73,7 +76,7 @@ class Model : public Updateable, public Updater {
       V state,
       M covariance, 
       M process_covariance,
-      std::vector<Listener> dependents = {}
+      std::vector<std::shared_ptr<Model>> dependents = {}
     );
 
     /**
@@ -88,4 +91,16 @@ class Model : public Updateable, public Updater {
      * @param estimate New sensor estimate
      */
     void estimate_update(Estimator &estimate);
+
+    /**
+     * Bind a model to this updater
+     * 
+     * @param model Model to bind
+     */
+    void bind_to(std::shared_ptr<Model> model);
+
+    /**
+     * Update all bound models
+     */
+    void update_dependents();
 };

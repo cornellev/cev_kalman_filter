@@ -1,8 +1,11 @@
 #pragma once
 
-#include "updater.h"
+#include "model.h"
 
-class Sensor : public Updater {
+class Sensor : public Estimator {
+    protected:
+        std::vector<std::shared_ptr<Model>> models;
+
     public:
         /**
          * Base class for a sensor model
@@ -14,8 +17,20 @@ class Sensor : public Updater {
         Sensor(
             V state, 
             M covariance,
-            std::vector<Listener> dependents = {}
+            std::vector<std::shared_ptr<Model>> dependents = {}
         );
+
+        /**
+         * Bind a model to this sensor
+         * 
+         * @param model Model to bind
+         */
+        void bind_to(std::shared_ptr<Model> model);
+
+        /**
+         * Update all bound models
+         */
+        void update_dependents();
     
         /**
          * Matrix that, when left multiplied by a state vector, gives a state matrix in the form of this model.

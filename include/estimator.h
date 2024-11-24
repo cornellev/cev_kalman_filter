@@ -112,8 +112,6 @@ class Estimator {
 
         bool initialized;
 
-        std::string name = "Estimator";
-
     public:
         /**
          * Base class for a model with a state and covariance
@@ -122,6 +120,8 @@ class Estimator {
          * @param covariance Start covariance
          */
         Estimator(V state, M covariance);
+
+        std::string name = "Estimator";
 
         /**
          * Current state of the sensor

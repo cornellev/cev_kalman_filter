@@ -5,9 +5,10 @@ Model::Model(
   V state,
   M covariance,
   M process_covariance,
-  std::vector<Listener> dependents
-) : Updater(state, covariance, dependents) {
+  std::vector<std::shared_ptr<Model>> dependents
+) : Estimator(state, covariance) {
   this->base_process_covariance = process_covariance;
+  this->models = dependents;
 }
 
 std::pair<V, M> Model::predict(double time) {
@@ -65,7 +66,7 @@ void Model::estimate_update(
 
   this->state = this->state + K_k * y_k;
 
-  // std::cout << this->state << std::endl;
+  std::cout << "YAW: " << this->state[yaw__] << std::endl;
 
   this->covariance = (
     MatrixXd::Identity(this->covariance.rows(), this->covariance.cols()
@@ -83,4 +84,16 @@ M Model::process_covariance(double dt) {
 
 M Model::sensor_jacobian(Estimator &estimate) {
   return estimate.state_matrix_multiplier() * update_jacobian(estimate.get_most_recent_update_time() - estimate.get_previous_update_time());
+}
+
+void Model::bind_to(std::shared_ptr<Model> model) {
+  models.push_back(model);
+}
+
+void Model::update_dependents() {
+  Estimator* self = this;
+
+  for (std::shared_ptr<Model> model : models) {
+    model->estimate_update(*self);
+  }
 }

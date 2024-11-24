@@ -96,7 +96,7 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
     IMUSensor(
       V state,
       M covariance, 
-      std::vector<Listener> dependents
+      std::vector<std::shared_ptr<Model>> dependents
     ) 
     : RosSensor<sensor_msgs::msg::Imu>(
         state, 
@@ -139,7 +139,7 @@ class OdomSensor : public RosSensor<cev_msgs::msg::SensorCollect> {
     OdomSensor(
       V state, 
       M covariance, 
-      std::vector<Listener> dependents
+      std::vector<std::shared_ptr<Model>> dependents
     ) : RosSensor<cev_msgs::msg::SensorCollect>(
       state, 
       covariance,
@@ -186,8 +186,6 @@ class AckermannEkfNode : public rclcpp::Node {
 
       // model->update(time);
 
-      // std::cout << model->get_state() << std::endl;
-
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = this->now();
       odom_msg.header.frame_id = "odom";
@@ -197,21 +195,28 @@ class AckermannEkfNode : public rclcpp::Node {
 
       odom_msg.pose.pose.position.x = state[x__];
       odom_msg.pose.pose.position.y = state[y__];
-      odom_msg.pose.pose.position.z = 0;
+      odom_msg.pose.pose.position.z = 0.0;
 
       tf2::Quaternion q;
-      q.setRPY(0, 0, state[yaw__]);
+      // odom_msg.pose.pose.orientation = tf2::createQuaternionMsgFromYaw(state[yaw__]);
+      q.setY(state[yaw__]);
       odom_msg.pose.pose.orientation.x = q.x();
       odom_msg.pose.pose.orientation.y = q.y();
+      odom_msg.pose.pose.orientation.z = q.z();
+      odom_msg.pose.pose.orientation.w = q.w();
+
+      odom_msg.twist.twist.linear.x = state[d_x__];
+      odom_msg.twist.twist.linear.y = state[d_y__];
+      odom_msg.twist.twist.angular.z = state[d_yaw__];
 
       // RCLCPP_INFO(this->get_logger(), "x: %f", model->get_covariance()(x__, x__));
 
-      odom_msg.pose.covariance[0] = model->get_covariance()(x__, x__);
-      odom_msg.pose.covariance[7] = model->get_covariance()(y__, y__);
-      odom_msg.pose.covariance[35] = model->get_covariance()(yaw__, yaw__);
+      // odom_msg.pose.covariance[0] = model->get_covariance()(x__, x__);
+      // odom_msg.pose.covariance[7] = model->get_covariance()(y__, y__);
+      // odom_msg.pose.covariance[35] = model->get_covariance()(yaw__, yaw__);
 
-      odom_msg.twist.covariance[0] = model->get_covariance()(d_x__, d_x__);
-      odom_msg.twist.covariance[35] = model->get_covariance()(tau__, tau__);
+      // odom_msg.twist.covariance[0] = model->get_covariance()(d_x__, d_x__);
+      // odom_msg.twist.covariance[35] = model->get_covariance()(tau__, tau__);
 
       odom_pub->publish(odom_msg);
     }

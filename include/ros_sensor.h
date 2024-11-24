@@ -16,7 +16,7 @@ class RosSensor : public Sensor {
         RosSensor(
             V state, 
             M covariance,
-            std::vector<Listener> dependents
+            std::vector<std::shared_ptr<Model>> dependents
         ) : Sensor(
                 state, 
                 covariance,
