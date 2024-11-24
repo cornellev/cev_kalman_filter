@@ -15,18 +15,55 @@ find_package(Eigen3 REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 
-add_library(update_model
-    src/update_model.cpp
-    include/update_model.h
+find_package(cev_msgs REQUIRED)
+
+add_library(estimator
+    src/estimator.cpp
+    include/estimator.h
 )
-ament_target_dependencies(update_model Eigen3)
+ament_target_dependencies(estimator Eigen3)
 
-include_directories(update_model include)
+add_library(model
+    src/model.cpp
+    include/model.h
+)
+
+add_library(sensor
+    src/sensor.cpp
+    include/sensor.h
+)
+
+add_library(ros_sensor
+    src/ros_sensor.cpp
+    include/ros_sensor.h
+)
+
+# add_library(updateable
+#     src/updateable.cpp
+#     include/updateable.h
+# )
+
+# add_library(updater
+#     src/updater.cpp
+#     include/updater.h
+# )
+
+include_directories(estimator include)
+include_directories(model include)
+include_directories(sensor include)
+include_directories(ros_sensor include)
+# include_directories(updateable include)
+# include_directories(updater include)
 
 add_executable(ackermann_ekf src/ackermann_ekf.cpp)
-target_link_libraries(ackermann_ekf update_model)
-ament_target_dependencies(ackermann_ekf rclcpp sensor_msgs std_msgs Eigen3)
+# target_link_libraries(ackermann_ekf estimator model sensor ros_sensor updateable updater)
+target_link_libraries(ackermann_ekf estimator model sensor ros_sensor)
+ament_target_dependencies(ackermann_ekf rclcpp sensor_msgs std_msgs Eigen3 cev_msgs tf2 tf2_ros tf2_geometry_msgs nav_msgs)
 
 install(TARGETS
   ackermann_ekf

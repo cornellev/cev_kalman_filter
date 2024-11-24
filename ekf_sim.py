@@ -22,7 +22,7 @@ WB = .3
 x = np.array([
         0.,  # x
         0.,  # y
-        1,  # x'
+        .5,  # x'
         0.,  # y'
         0.,  # yaw
         .79,  # steering angle
@@ -113,9 +113,11 @@ def sensor_update(
         sensor_state,
         sensor_mul_matrix,
         sensor_variance,
-        dt
+        dt,
+        update_time_elapsed
 ):
-    H_k = H(state_, dt, sensor_mul_matrix)
+    # H_k = H(state_, update_time_elapsed, sensor_mul_matrix)
+    H_k = H(state_, update_time_elapsed, sensor_mul_matrix)
     R_k = sensor_variance
     h = sensor_mul_matrix
 
@@ -156,12 +158,31 @@ def fake_enc(state):
         state[5]
     ])
 
+rseed = 1000
+random.seed(rseed)
+
+def root_means_squared_estimation_error(ground_truth_states, estimated_states):
+    """
+    Take an array of ground truth and estimated states. Return the mean squared error of x and y
+    """
+    x_error = 0
+    y_error = 0
+
+    for i in range(len(ground_truth_states)):
+        x_error += (ground_truth_states[i][0] - estimated_states[i][0]) ** 2
+        y_error += (ground_truth_states[i][1] - estimated_states[i][1]) ** 2
+
+    return (x_error / len(ground_truth_states) + y_error / len(ground_truth_states)) ** .5
+
 
 def main_loop():
     state = copy.deepcopy(x)
     variance = copy.deepcopy(P)
     next_state = copy.deepcopy(x)
     next_var = copy.deepcopy(P)
+
+    true_states = []
+    est_states = []
 
     sensor_mul_matrix = {
         "imu": np.array([
@@ -182,6 +203,11 @@ def main_loop():
         ]),
     }
 
+    last_update_time_matrix = {
+        "imu": 0,
+        "enc": 0,
+    }
+
     sensor_state = {
         "imu": fake_imu,
         "enc": fake_enc,
@@ -194,9 +220,13 @@ def main_loop():
 
     # Simulate the state change with F and a dt of .1 100 times using matplotlib
     for i in range(int(real_t / cycle_dt)):
+        true_states.append(next_state)
+        est_states.append(state)
+
         seed = random.random()
 
         # Adjust steering angle continuously
+        # next_state[5] = math.sin(i * cycle_dt / 2) * .79
         next_state[5] = math.sin(i * cycle_dt / 2) * .79
 
         next_state, next_var = predict(next_state, next_var, cycle_dt)
@@ -205,25 +235,42 @@ def main_loop():
         if seed < .8:
             state, variance = predict(state, variance, cycle_dt)
         elif seed < .9:
+            current_time = i * cycle_dt
+            last_update_time = last_update_time_matrix["imu"]
+            update_time_elapsed = current_time - last_update_time
+            last_update_time_matrix["imu"] = current_time
+
             state, variance = sensor_update(
                 state,
                 variance,
                 sensor_state["imu"](next_state),
                 sensor_mul_matrix["imu"],
                 sensor_variances["imu"],
-                cycle_dt
+                cycle_dt,
+                update_time_elapsed
             )
         elif seed < 1.0:
+            current_time = i * cycle_dt
+            last_update_time = last_update_time_matrix["enc"]
+            update_time_elapsed = current_time - last_update_time
+            last_update_time_matrix["enc"] = current_time
+
             state, variance = sensor_update(
                 state,
                 variance,
                 sensor_state["enc"](next_state),
                 sensor_mul_matrix["enc"],
                 sensor_variances["enc"],
-                cycle_dt
+                cycle_dt,
+                update_time_elapsed
             )
 
         plt.plot(state[0], state[1], 'ro')
+
+    true_states.append(next_state)
+    est_states.append(state)
+
+    print("Root mean squared estimation error: ", root_means_squared_estimation_error(true_states, est_states))
 
 
 if __name__ == "__main__":

@@ -58,6 +58,7 @@ RUN rm -rf /root/ws/tmp
 
 RUN source /opt/ros/$ROS_DISTRO/setup.bash \
     && cd /root/ws \
-    && colcon build
+    && colcon build \
+    && git clone https://github.com/cornellev/cev_msgs.git src/cev_msgs
 
 EXPOSE 4567

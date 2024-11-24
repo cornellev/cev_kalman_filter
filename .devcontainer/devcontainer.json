@@ -3,8 +3,8 @@
     "build": {
         "dockerfile": "Dockerfile.dev"
     },
-    "workspaceMount": "source=${localWorkspaceFolder},target=/root/ws/src,type=bind",
-    "workspaceFolder": "/root/ws/src",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/root/ws/src/ackermann_kf,type=bind",
+    "workspaceFolder": "/root/ws/src/ackermann_kf",
     "runArgs": [
         "--rm",
         "--network=host",
