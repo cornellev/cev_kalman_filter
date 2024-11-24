@@ -13,9 +13,7 @@ class Updater : public Estimator {
   public:
     Updater(
       V state, 
-      M covariance, 
-      double last_update_time = 0, 
-      bool initialized = false,
+      M covariance,
       std::vector<Listener> dependents = {}
     );
 
@@ -28,9 +26,6 @@ class Updater : public Estimator {
 
     /**
      * Update all bound models
-     * 
-     * @param state New state
-     * @param time Time of state update
      */
     void update_dependents();
 };

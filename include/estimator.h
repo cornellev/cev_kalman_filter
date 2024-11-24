@@ -1,6 +1,8 @@
 #pragma once
 
 #include <eigen3/Eigen/Dense>
+#include <iostream>
+#include <string> 
 
 using namespace Eigen;
 
@@ -81,13 +83,36 @@ using V = Vector<double, S>;
 // M represents a matrix of state x state size
 using M = Matrix<double, S, S>;
 
+/**
+ * @struct StatePackage
+ * Package for a estimate update
+ */
+struct StatePackage {
+  V state;
+  M covariance;
+  double update_time;
+};
+
+/**
+ * @struct SimpleStatePackage
+ * Struct for a simple state update, no covariance
+ */
+struct SimpleStatePackage {
+  V state;
+  double update_time;
+};
+
 class Estimator {
     protected:
         V state;
         M covariance;
 
-        double last_update_time;
-        bool initialized = false;
+        double previous_update_time;
+        double most_recent_update_time;
+
+        bool initialized;
+
+        std::string name = "Estimator";
 
     public:
         /**
@@ -95,10 +120,8 @@ class Estimator {
          * 
          * @param state Start state
          * @param covariance Start covariance
-         * @param last_update_time Time of last update
-         * @param initialized Whether the model has been initialized
          */
-        Estimator(V state, M covariance, double last_update_time = 0, bool initialized = false);
+        Estimator(V state, M covariance);
 
         /**
          * Current state of the sensor
@@ -113,34 +136,48 @@ class Estimator {
          * @return Sensor covariance
          */
         M get_covariance();
-    
-        /**
-         * Set the state of the sensor
-         *
-         * @param state New sensor state
-         */
-        void set_state(V state, double time);
 
         /**
-         * Set the covariance of the sensor
-         *
-         * @param covariance New sensor covariance
-         */
-        void set_covariance(M covariance);
-
-        /**
-         * Get the time of the last update
+         * Get the estimate internals
          * 
-         * @return Time of last update
+         * @return Estimate internals
          */
-        double get_last_update_time();
+        StatePackage get_internals();
 
         /**
-         * Get whether the model has been initialized
+         * Update the model estimate data with a simple state and time update
          * 
-         * @return Whether the model has been initialized
+         * @param package Package of state and time
          */
-        bool is_initialized();
+        void updateInternals(SimpleStatePackage package);
+
+        /**
+         * Update the model estimate data
+         * 
+         * @param package Package of state, covariance, and time
+         */
+        void updateInternals(StatePackage package);
+
+        /**
+         * Get the time of the most recent update
+         * 
+         * @return Time of most recent update
+         */
+        double get_most_recent_update_time();
+
+        /**
+         * Get the previous update time
+         * 
+         * @return Previous update time
+         */
+        double get_previous_update_time();
+
+        /**
+         * Get the time since the most recent update
+         * 
+         * @return Time since most recent update
+         */
+        double dt();
     
         /**
          * Matrix that, when left multiplied by a state vector, 
@@ -148,5 +185,5 @@ class Estimator {
          * 
          * @return Multiplier matrix
          */
-        virtual M state_matrix_multiplier();
+        virtual M state_matrix_multiplier() = 0;
 };

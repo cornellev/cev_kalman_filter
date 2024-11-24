@@ -17,9 +17,9 @@ class Model : public Updateable, public Updater {
     std::pair<V, M> predict(double time);
 
     /**
-     * Perform a model update step on `state` with time `dt`.
+     * Perform a model update step up to `time`.
      *
-     * @param time Time to predict to
+     * @param time Time to update to
      *
      * @return Updated system state
     */
@@ -28,11 +28,11 @@ class Model : public Updateable, public Updater {
     /**
      * Jacobian matrix of a model update step on `state` with time `dt`.
      *
-     * @param time Time to predict to
+     * @param dt Time since last update
      *
      * @return Jacobian matrix of state update step
      */
-    virtual M update_jacobian(double time) = 0;
+    virtual M update_jacobian(double dt) = 0;
 
     /**
      * Transformed version of the model Jacobian matrix for the state of a given sensor.
@@ -41,23 +41,23 @@ class Model : public Updateable, public Updater {
      *
      * @return Sensor-specific model Jacobian matrix of state update step
      */
-    M sensor_jacobian(Estimator estimate);
+    M sensor_jacobian(Estimator &estimate);
 
     /**
      * Gives process covariance over elapsed time dt.
      *
-     * @param time Time to predict to
+     * @param time Time since last update
      *
      * @return Process covariance matrix
      */
-    M process_covariance(double time);
+    M process_covariance(double dt);
 
     /**
      * Matrix that, when left multiplied by a state vector, gives a state matrix in the form of this model.
      * 
      * @return Multiplier matrix
      */
-    virtual M state_matrix_multiplier();
+    virtual M state_matrix_multiplier() = 0;
 
   public:
     /**
@@ -66,8 +66,6 @@ class Model : public Updateable, public Updater {
      * @param state Start state
      * @param covariance Start covariance
      * @param base_process_covariance Process covariance over time
-     * @param last_update_time Time of last update
-     * @param initialized Whether the model has been initialized
      * @param dependents Models that depend on this model
      * 
      */
@@ -75,8 +73,6 @@ class Model : public Updateable, public Updater {
       V state,
       M covariance, 
       M process_covariance,
-      double last_update_time = 0,
-      bool initialized = false,
       std::vector<Listener> dependents = {}
     );
 
@@ -91,7 +87,5 @@ class Model : public Updateable, public Updater {
      *
      * @param estimate New sensor estimate
      */
-    void estimate_update(
-      Estimator estimate
-    );
+    void estimate_update(Estimator &estimate);
 };

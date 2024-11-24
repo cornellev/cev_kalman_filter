@@ -9,15 +9,11 @@ class Sensor : public Updater {
          *
          * @param state Current state
          * @param covariance Covariance
-         * @param last_update_time Time of last update
-         * @param initialized Whether the sensor has been initialized
          * @param dependents Models that depend on this sensor
          */
         Sensor(
             V state, 
             M covariance,
-            double last_update_time = 0,
-            bool initialized = false,
             std::vector<Listener> dependents = {}
         );
     

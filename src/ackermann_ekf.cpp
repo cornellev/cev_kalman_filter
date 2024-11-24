@@ -12,6 +12,8 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "cev_msgs/msg/sensor_collect.hpp"
 
+#include <iostream>
+
 using std::placeholders::_1;
 
 class AckermannModel : public Model {
@@ -19,7 +21,7 @@ class AckermannModel : public Model {
 
   private:
     double wheelbase;
-    M multiplier;
+    M multiplier = M::Zero();
 
   public:
     AckermannModel(
@@ -39,7 +41,7 @@ class AckermannModel : public Model {
     }
 
     V update_step(double time) {
-      double dt = time - last_update_time;
+      double dt = time - most_recent_update_time;
 
       float d_yaw = d_x_ * sin(tau_) / wheelbase * dt;
       float new_yaw = yaw_ + d_yaw;
@@ -56,9 +58,7 @@ class AckermannModel : public Model {
       return new_state;
     }
 
-    M update_jacobian(double time) {
-      double dt = time - last_update_time;
-
+    M update_jacobian(double dt) {
       M F_k = MatrixXd::Identity(S, S);
 
       double p_yaw_dx = dt * sin(tau_) / wheelbase;
@@ -104,34 +104,37 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
         dependents
       ) 
     {
-      multiplier(d2_x__, d2_x__) = 1;
-      multiplier(d2_y__, d2_y__) = 1;
-      multiplier(yaw__, yaw__) = 1;
+      multiplier(d2_x__, d2_x__) = 1.0;
+      multiplier(d2_y__, d2_y__) = 1.0;
+      multiplier(yaw__, yaw__) = 1.0;
     }
 
-    void msg_update(sensor_msgs::msg::Imu msg) {
-      // Convert IMU data to d2x, d2y, yaw
-      d2_x_ = msg.linear_acceleration.x;
-      d2_y_ = msg.linear_acceleration.y;
+    StatePackage msg_update(sensor_msgs::msg::Imu::SharedPtr msg) {
+      this->name = "IMU";
+      StatePackage estimate = get_internals();
+
+      estimate.update_time = msg->header.stamp.sec + (msg->header.stamp.nanosec / 1e9);
+
+      estimate.state[d2_x__] = msg->linear_acceleration.x;
+      estimate.state[d2_y__] = msg->linear_acceleration.y;
 
       // Get yaw from quaternion
       tf2::Quaternion q(
-        msg.orientation.x,
-        msg.orientation.y,
-        msg.orientation.z,
-        msg.orientation.w
+        msg->orientation.x,
+        msg->orientation.y,
+        msg->orientation.z,
+        msg->orientation.w
       );
       tf2::Matrix3x3 m(q);
       double roll, pitch, yaw;
       m.getRPY(roll, pitch, yaw);
-      yaw_ = yaw;
+      estimate.state[yaw__] = yaw;
+
+      return estimate;
     }
 };
 
 class OdomSensor : public RosSensor<cev_msgs::msg::SensorCollect> {
-  private:
-    M multiplier;
-
   public:
     OdomSensor(
       V state, 
@@ -146,40 +149,44 @@ class OdomSensor : public RosSensor<cev_msgs::msg::SensorCollect> {
       multiplier(tau__, tau__) = 1;
     }
 
-    M state_matrix_multiplier() {
-      return multiplier;
-    }
+    StatePackage msg_update(cev_msgs::msg::SensorCollect::SharedPtr msg) {
+      StatePackage estimate = get_internals();
 
-    void msg_update(cev_msgs::msg::SensorCollect msg) {
-      d_x_ = msg.velocity;
-      tau_ = msg.steering_angle;
+      estimate.update_time = static_cast<double>(msg->stamp);
+
+      estimate.state[d_x__] = msg->velocity;
+      estimate.state[tau__] = msg->steering_angle;
+
+      return estimate;
     }
 };
 
 class AckermannEkfNode : public rclcpp::Node {
   public:
     AckermannEkfNode() : Node("AckermannEkfNode") {
-      rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub = 
-        this->create_subscription<sensor_msgs::msg::Imu>(
-          "imu", 1, std::bind(&IMUSensor::msg_handler, &imu, _1)
-        );
+      imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
+        "imu", 1, std::bind(&IMUSensor::msg_handler, &imu, _1)
+      );
 
-      rclcpp::Subscription<cev_msgs::msg::SensorCollect>::SharedPtr odom_sub = 
-        this->create_subscription<cev_msgs::msg::SensorCollect>(
-          "sensor_odom", 1, std::bind(&OdomSensor::msg_handler, &odom, _1)
-        );
+      // odom_sub = this->create_subscription<cev_msgs::msg::SensorCollect>(
+      //   "sensor_collect", 1, std::bind(&OdomSensor::msg_handler, &odom, _1)
+      // );
 
       timer = this->create_wall_timer(
         std::chrono::milliseconds(20), std::bind(&AckermannEkfNode::timer_callback, this)
       );
 
-      odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odometry/filtered", 1);
+      odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odometry/meow", 1);
     }
-
     void timer_callback() {
-      double time = get_clock()->now().seconds();
+      // double time = get_clock()->now().seconds();
 
-      model->update(time);
+      // model->update(time);
+      // sensor_msgs::msg::Imu imu_msg;
+
+      // model->update(time);
+
+      // std::cout << model->get_state() << std::endl;
 
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = this->now();
@@ -197,6 +204,15 @@ class AckermannEkfNode : public rclcpp::Node {
       odom_msg.pose.pose.orientation.x = q.x();
       odom_msg.pose.pose.orientation.y = q.y();
 
+      // RCLCPP_INFO(this->get_logger(), "x: %f", model->get_covariance()(x__, x__));
+
+      odom_msg.pose.covariance[0] = model->get_covariance()(x__, x__);
+      odom_msg.pose.covariance[7] = model->get_covariance()(y__, y__);
+      odom_msg.pose.covariance[35] = model->get_covariance()(yaw__, yaw__);
+
+      odom_msg.twist.covariance[0] = model->get_covariance()(d_x__, d_x__);
+      odom_msg.twist.covariance[35] = model->get_covariance()(tau__, tau__);
+
       odom_pub->publish(odom_msg);
     }
 
@@ -213,7 +229,7 @@ class AckermannEkfNode : public rclcpp::Node {
     std::shared_ptr<AckermannModel> model = 
       std::make_shared<AckermannModel>(
         AckermannModel(
-          V::Zero(),
+          V::Ones(), // TODO: Make Zeros
           M::Identity() * .1,
           M::Identity() * .1,
           1.0

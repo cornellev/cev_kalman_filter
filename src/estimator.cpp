@@ -1,10 +1,10 @@
 #include "estimator.h"
 
-Estimator::Estimator(V state, M covariance, double last_update_time, bool initialized) {
+Estimator::Estimator(V state, M covariance) {
   this->state = state;
   this->covariance = covariance;
-  this->last_update_time = last_update_time;
-  this->initialized = initialized;
+  this->most_recent_update_time = 0;
+  this->previous_update_time = 0;
 }
 
 V Estimator::get_state() {
@@ -15,24 +15,31 @@ M Estimator::get_covariance() {
   return covariance;
 }
 
-void Estimator::set_state(V state, double time) {
-  this->state = state;
-  this->last_update_time = time;
-  this->initialized = true;
+StatePackage Estimator::get_internals() {
+  return {state, covariance, most_recent_update_time};
 }
 
-void Estimator::set_covariance(M covariance) {
-  this->covariance = covariance;
+void Estimator::updateInternals(StatePackage package) {
+  state = package.state;
+  covariance = package.covariance;
+  previous_update_time = most_recent_update_time;
+  most_recent_update_time = package.update_time;
 }
 
-double Estimator::get_last_update_time() {
-  return last_update_time;
+void Estimator::updateInternals(SimpleStatePackage package) {
+  state = package.state;
+  previous_update_time = most_recent_update_time;
+  most_recent_update_time = package.update_time;
 }
 
-bool Estimator::is_initialized() {
-  return initialized;
+double Estimator::get_most_recent_update_time() {
+  return most_recent_update_time;
 }
 
-M Estimator::state_matrix_multiplier() {
-  return MatrixXd::Identity(S, S);
+double Estimator::get_previous_update_time() {
+  return previous_update_time;
+}
+
+double Estimator::dt() {
+  return most_recent_update_time - previous_update_time;
 }

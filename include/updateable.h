@@ -9,5 +9,5 @@ class Updateable {
      * 
      * @param estimate Estimate to update with
      */
-    virtual void estimate_update(Estimator estimate) = 0;
+    virtual void estimate_update(Estimator &estimate) = 0;
 };
