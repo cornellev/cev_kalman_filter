@@ -46,19 +46,17 @@ class AckermannModel : public Model {
 
       // std::cout << "dx: " << _d_x_ << std::endl;
 
-      float d_yaw = d_x_ * sin(tau_) / wheelbase * dt;
-      float new_yaw = yaw_ + d_yaw;
+      double d_yaw = d_x_ * sin(tau_) / wheelbase * dt;
+      double new_yaw = yaw_ + d_yaw;
 
-      float new_x = x_ + d_x_ * cos(yaw_ + tau_) * dt;
-      float new_y = y_ + d_x_ * sin(yaw_ + tau_) * dt;
+      double new_x = x_ + d_x_ * cos(yaw_ + tau_) * dt;
+      double new_y = y_ + d_x_ * sin(yaw_ + tau_) * dt;
 
       V new_state = this->state;
 
       new_state[0] = new_x;
       new_state[1] = new_y;
       new_state[5] = new_yaw;
-
-      // std::cout << "new state: " << new_state.transpose() << std::endl;
 
       return new_state;
     }
@@ -157,7 +155,7 @@ class OdomSensor : public RosSensor<cev_msgs::msg::SensorCollect> {
     StatePackage msg_update(cev_msgs::msg::SensorCollect::SharedPtr msg) {
       StatePackage estimate = get_internals();
 
-      estimate.update_time = static_cast<double>(msg->stamp) / 1e9;
+      estimate.update_time = msg->timestamp;
 
       estimate.state[d_x__] = msg->velocity;
       estimate.state[tau__] = msg->steering_angle;
@@ -181,9 +179,9 @@ class AckermannEkfNode : public rclcpp::Node {
         "imu", 1, std::bind(&IMUSensor::msg_handler, &imu, _1)
       );
 
-      // odom_sub = this->create_subscription<cev_msgs::msg::SensorCollect>(
-      //   "sensor_collect", 1, std::bind(&OdomSensor::msg_handler, &odom, _1)
-      // );
+      odom_sub = this->create_subscription<cev_msgs::msg::SensorCollect>(
+        "sensor_collect", 1, std::bind(&OdomSensor::msg_handler, &odom, _1)
+      );
 
       timer = this->create_wall_timer(
         std::chrono::milliseconds(100), std::bind(&AckermannEkfNode::timer_callback, this)
@@ -219,12 +217,12 @@ class AckermannEkfNode : public rclcpp::Node {
 
       tf2::Quaternion q = tf2::Quaternion();
       // odom_msg.pose.pose.orientation = tf2::createQuaternionMsgFromYaw(state[yaw__]);
-      q.setY(state[yaw__]);
+      q.setRPY(0, 0, state[yaw__]);
       q = q.normalized();
-      // odom_msg.pose.pose.orientation.x = q.x();
-      // odom_msg.pose.pose.orientation.y = q.y();
-      // odom_msg.pose.pose.orientation.z = q.z();
-      // odom_msg.pose.pose.orientation.w = q.w();
+      odom_msg.pose.pose.orientation.x = q.x();
+      odom_msg.pose.pose.orientation.y = q.y();
+      odom_msg.pose.pose.orientation.z = q.z();
+      odom_msg.pose.pose.orientation.w = q.w();
 
       odom_msg.twist.twist.linear.x = state[d_x__];
       odom_msg.twist.twist.linear.y = state[d_y__];
