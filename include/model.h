@@ -92,6 +92,10 @@ class Model : public Estimator {
      */
     void estimate_update(Estimator &estimate);
 
+    void force_state(V state) {
+      this->state = state;
+    }
+
     /**
      * Bind a model to this updater
      * 

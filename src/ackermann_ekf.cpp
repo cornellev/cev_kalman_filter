@@ -4,6 +4,7 @@
 
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include "model.h"
 #include "ros_sensor.h"
@@ -43,17 +44,21 @@ class AckermannModel : public Model {
     V update_step(double time) {
       double dt = time - most_recent_update_time;
 
+      // std::cout << "dx: " << _d_x_ << std::endl;
+
       float d_yaw = d_x_ * sin(tau_) / wheelbase * dt;
       float new_yaw = yaw_ + d_yaw;
 
       float new_x = x_ + d_x_ * cos(yaw_ + tau_) * dt;
       float new_y = y_ + d_x_ * sin(yaw_ + tau_) * dt;
 
-      V new_state;
+      V new_state = this->state;
 
       new_state[0] = new_x;
       new_state[1] = new_y;
       new_state[5] = new_yaw;
+
+      // std::cout << "new state: " << new_state.transpose() << std::endl;
 
       return new_state;
     }
@@ -152,7 +157,7 @@ class OdomSensor : public RosSensor<cev_msgs::msg::SensorCollect> {
     StatePackage msg_update(cev_msgs::msg::SensorCollect::SharedPtr msg) {
       StatePackage estimate = get_internals();
 
-      estimate.update_time = static_cast<double>(msg->stamp);
+      estimate.update_time = static_cast<double>(msg->stamp) / 1e9;
 
       estimate.state[d_x__] = msg->velocity;
       estimate.state[tau__] = msg->steering_angle;
@@ -164,6 +169,14 @@ class OdomSensor : public RosSensor<cev_msgs::msg::SensorCollect> {
 class AckermannEkfNode : public rclcpp::Node {
   public:
     AckermannEkfNode() : Node("AckermannEkfNode") {
+      V start_state = V::Zero();
+      // start_state[x__] = 2.0;
+      // start_state[d_x__] = 1.0;
+      // start_state[tau__] = 30 * M_PI / 180.0;
+      model->force_state(start_state);
+
+      std::cout << "Start state: " << start_state.transpose() << std::endl;
+      std::cout << "State: " << model->get_state().transpose() << std::endl;
       imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
         "imu", 1, std::bind(&IMUSensor::msg_handler, &imu, _1)
       );
@@ -173,15 +186,21 @@ class AckermannEkfNode : public rclcpp::Node {
       // );
 
       timer = this->create_wall_timer(
-        std::chrono::milliseconds(20), std::bind(&AckermannEkfNode::timer_callback, this)
+        std::chrono::milliseconds(100), std::bind(&AckermannEkfNode::timer_callback, this)
       );
+
+      tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
       odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odometry/meow", 1);
     }
+
     void timer_callback() {
       // double time = get_clock()->now().seconds();
 
       // model->update(time);
+
+      std::cout << "State: " << model->get_state().transpose() << std::endl;
+      // std::cout << "Yaw in degrees: " << model->get_state()[yaw__] * 180.0 / M_PI << std::endl;
       // sensor_msgs::msg::Imu imu_msg;
 
       // model->update(time);
@@ -195,15 +214,17 @@ class AckermannEkfNode : public rclcpp::Node {
 
       odom_msg.pose.pose.position.x = state[x__];
       odom_msg.pose.pose.position.y = state[y__];
+
       odom_msg.pose.pose.position.z = 0.0;
 
-      tf2::Quaternion q;
+      tf2::Quaternion q = tf2::Quaternion();
       // odom_msg.pose.pose.orientation = tf2::createQuaternionMsgFromYaw(state[yaw__]);
       q.setY(state[yaw__]);
-      odom_msg.pose.pose.orientation.x = q.x();
-      odom_msg.pose.pose.orientation.y = q.y();
-      odom_msg.pose.pose.orientation.z = q.z();
-      odom_msg.pose.pose.orientation.w = q.w();
+      q = q.normalized();
+      // odom_msg.pose.pose.orientation.x = q.x();
+      // odom_msg.pose.pose.orientation.y = q.y();
+      // odom_msg.pose.pose.orientation.z = q.z();
+      // odom_msg.pose.pose.orientation.w = q.w();
 
       odom_msg.twist.twist.linear.x = state[d_x__];
       odom_msg.twist.twist.linear.y = state[d_y__];
@@ -219,11 +240,31 @@ class AckermannEkfNode : public rclcpp::Node {
       // odom_msg.twist.covariance[35] = model->get_covariance()(tau__, tau__);
 
       odom_pub->publish(odom_msg);
+
+      geometry_msgs::msg::TransformStamped transformStamped;
+
+      // Assuming you have the current state stored in the class
+      transformStamped.header.stamp = this->now();
+      transformStamped.header.frame_id = "odom";
+      transformStamped.child_frame_id = "base_link";
+
+      // Replace these with the actual state variables
+      transformStamped.transform.translation.x = state[x__];
+      transformStamped.transform.translation.y = state[y__];
+      transformStamped.transform.translation.z = 0.0; // Assuming 2D plane
+
+      transformStamped.transform.rotation.x = q.x();
+      transformStamped.transform.rotation.y = q.y();
+      transformStamped.transform.rotation.z = q.z();
+      transformStamped.transform.rotation.w = q.w();
+
+      // tf_broadcaster_->sendTransform(transformStamped);
     }
 
   private:
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
     rclcpp::Subscription<cev_msgs::msg::SensorCollect>::SharedPtr odom_sub;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
     // Wall clock for publishing ackermann model state
     rclcpp::TimerBase::SharedPtr timer;
@@ -234,7 +275,7 @@ class AckermannEkfNode : public rclcpp::Node {
     std::shared_ptr<AckermannModel> model = 
       std::make_shared<AckermannModel>(
         AckermannModel(
-          V::Ones(), // TODO: Make Zeros
+          V::Zero(),
           M::Identity() * .1,
           M::Identity() * .1,
           1.0

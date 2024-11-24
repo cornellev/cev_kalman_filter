@@ -27,13 +27,15 @@ void Model::update(double time) {
   }
 
   std::pair<V, M> prediction = predict(time);
-  state = prediction.first;
-  covariance = prediction.second;
+  this->state = prediction.first;
+  this->covariance = prediction.second;
+
+  // std::cout << this->state << std::endl;
 
   previous_update_time = most_recent_update_time;
   most_recent_update_time = time;
 
-  update_dependents();
+  // update_dependents();
 }
 
 void Model::estimate_update(
@@ -65,8 +67,6 @@ void Model::estimate_update(
   M K_k = covariance * H_k.transpose() * S_k.inverse();
 
   this->state = this->state + K_k * y_k;
-
-  std::cout << "YAW: " << this->state[yaw__] << std::endl;
 
   this->covariance = (
     MatrixXd::Identity(this->covariance.rows(), this->covariance.cols()
