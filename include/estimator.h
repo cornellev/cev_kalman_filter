@@ -107,10 +107,10 @@ class Estimator {
         V state;
         M covariance;
 
-        double previous_update_time;
-        double most_recent_update_time;
+        double previous_update_time = 0.0;
+        double most_recent_update_time = 0.0;
 
-        bool initialized;
+        bool initialized = false;
 
     public:
         /**

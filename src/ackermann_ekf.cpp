@@ -44,8 +44,6 @@ class AckermannModel : public Model {
     V update_step(double time) {
       double dt = time - most_recent_update_time;
 
-      // std::cout << "dx: " << _d_x_ << std::endl;
-
       double d_yaw = d_x_ * sin(tau_) / wheelbase * dt;
       double new_yaw = yaw_ + d_yaw;
 
@@ -94,14 +92,13 @@ class AckermannModel : public Model {
     }
 };
 
-class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {  
+class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
   public:
     IMUSensor(
       V state,
       M covariance, 
       std::vector<std::shared_ptr<Model>> dependents
-    ) 
-    : RosSensor<sensor_msgs::msg::Imu>(
+    ) : RosSensor<sensor_msgs::msg::Imu>(
         state, 
         covariance,
         dependents
@@ -168,13 +165,12 @@ class AckermannEkfNode : public rclcpp::Node {
   public:
     AckermannEkfNode() : Node("AckermannEkfNode") {
       V start_state = V::Zero();
-      // start_state[x__] = 2.0;
-      // start_state[d_x__] = 1.0;
-      // start_state[tau__] = 30 * M_PI / 180.0;
+      start_state[x__] = 2.0;
+      start_state[d_x__] = 1.0;
+      start_state[tau__] = 30 * M_PI / 180.0;
+
       model->force_state(start_state);
 
-      std::cout << "Start state: " << start_state.transpose() << std::endl;
-      std::cout << "State: " << model->get_state().transpose() << std::endl;
       imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
         "imu", 1, std::bind(&IMUSensor::msg_handler, &imu, _1)
       );
@@ -184,7 +180,7 @@ class AckermannEkfNode : public rclcpp::Node {
       );
 
       timer = this->create_wall_timer(
-        std::chrono::milliseconds(100), std::bind(&AckermannEkfNode::timer_callback, this)
+        std::chrono::milliseconds(10), std::bind(&AckermannEkfNode::timer_callback, this)
       );
 
       tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -194,13 +190,6 @@ class AckermannEkfNode : public rclcpp::Node {
 
     void timer_callback() {
       // double time = get_clock()->now().seconds();
-
-      // model->update(time);
-
-      std::cout << "State: " << model->get_state().transpose() << std::endl;
-      // std::cout << "Yaw in degrees: " << model->get_state()[yaw__] * 180.0 / M_PI << std::endl;
-      // sensor_msgs::msg::Imu imu_msg;
-
       // model->update(time);
 
       nav_msgs::msg::Odometry odom_msg;
@@ -216,7 +205,6 @@ class AckermannEkfNode : public rclcpp::Node {
       odom_msg.pose.pose.position.z = 0.0;
 
       tf2::Quaternion q = tf2::Quaternion();
-      // odom_msg.pose.pose.orientation = tf2::createQuaternionMsgFromYaw(state[yaw__]);
       q.setRPY(0, 0, state[yaw__]);
       q = q.normalized();
       odom_msg.pose.pose.orientation.x = q.x();
@@ -228,28 +216,17 @@ class AckermannEkfNode : public rclcpp::Node {
       odom_msg.twist.twist.linear.y = state[d_y__];
       odom_msg.twist.twist.angular.z = state[d_yaw__];
 
-      // RCLCPP_INFO(this->get_logger(), "x: %f", model->get_covariance()(x__, x__));
-
-      // odom_msg.pose.covariance[0] = model->get_covariance()(x__, x__);
-      // odom_msg.pose.covariance[7] = model->get_covariance()(y__, y__);
-      // odom_msg.pose.covariance[35] = model->get_covariance()(yaw__, yaw__);
-
-      // odom_msg.twist.covariance[0] = model->get_covariance()(d_x__, d_x__);
-      // odom_msg.twist.covariance[35] = model->get_covariance()(tau__, tau__);
-
       odom_pub->publish(odom_msg);
 
       geometry_msgs::msg::TransformStamped transformStamped;
 
-      // Assuming you have the current state stored in the class
       transformStamped.header.stamp = this->now();
       transformStamped.header.frame_id = "odom";
       transformStamped.child_frame_id = "base_link";
 
-      // Replace these with the actual state variables
       transformStamped.transform.translation.x = state[x__];
       transformStamped.transform.translation.y = state[y__];
-      transformStamped.transform.translation.z = 0.0; // Assuming 2D plane
+      transformStamped.transform.translation.z = state[z__];
 
       transformStamped.transform.rotation.x = q.x();
       transformStamped.transform.rotation.y = q.y();
@@ -278,7 +255,7 @@ class AckermannEkfNode : public rclcpp::Node {
           M::Identity() * .1,
           1.0
         )
-      );
+    );
 
     IMUSensor imu = IMUSensor(
       V::Zero(),

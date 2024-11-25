@@ -19,6 +19,10 @@ std::pair<V, M> Model::predict(double time) {
 }
 
 void Model::update(double time) {
+  if (time - most_recent_update_time < 0) {
+    return;
+  }
+
   if (!this->initialized) {
     this->previous_update_time = time;
     this->most_recent_update_time = time;
@@ -30,17 +34,19 @@ void Model::update(double time) {
   this->state = prediction.first;
   this->covariance = prediction.second;
 
-  // std::cout << this->state << std::endl;
-
   previous_update_time = most_recent_update_time;
   most_recent_update_time = time;
 
-  // update_dependents();
+  update_dependents();
 }
 
 void Model::estimate_update(
   Estimator &estimate
 ) {
+  if (estimate.get_most_recent_update_time() - most_recent_update_time < 0.0) {
+    return;
+  }
+
   if (!this->initialized) {
     this->previous_update_time = estimate.get_most_recent_update_time();
     this->most_recent_update_time = estimate.get_most_recent_update_time();

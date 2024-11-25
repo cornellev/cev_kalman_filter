@@ -43,6 +43,7 @@ def generate_launch_description():
             package='ackermann_ekf',
             executable='ackermann_ekf',
             name='ackermann_ekf_node',
-            output='screen'
+            output='screen',
+            arguments=['--ros-args', '--log-level', 'DEBUG'],
         ),
     ])
