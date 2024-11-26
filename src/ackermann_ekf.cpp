@@ -39,22 +39,32 @@ class AckermannModel : public Model {
       multiplier(d_y__, d_y__) = 1;
       multiplier(yaw__, yaw__) = 1;
       multiplier(tau__, tau__) = 1;
+      // multiplier(d_tau__, d_tau__) = 1;
     }
 
     V update_step(double time) {
       double dt = time - most_recent_update_time;
 
-      double d_yaw = d_x_ * sin(tau_) / wheelbase * dt;
+      double d_yaw = d_x_ * (sin(tau_) / wheelbase) * dt;
       double new_yaw = yaw_ + d_yaw;
+
+      double new_d_x = d_x_ + d2_x_ * dt;
+      double new_d_y = d_y_ + d2_y_ * dt;
+      // double new_d_tau = d_tau_ + d2_tau_ * dt;
+      double new_tau = tau_ + d_tau_ * dt;
 
       double new_x = x_ + d_x_ * cos(yaw_ + tau_) * dt;
       double new_y = y_ + d_x_ * sin(yaw_ + tau_) * dt;
 
       V new_state = this->state;
 
-      new_state[0] = new_x;
-      new_state[1] = new_y;
-      new_state[5] = new_yaw;
+      new_state[x__] = new_x;
+      new_state[y__] = new_y;
+      new_state[d_x__] = new_d_x;
+      new_state[d_y__] = new_d_y;
+      new_state[yaw__] = new_yaw;
+      new_state[tau__] = new_tau;
+      // new_state[d_tau__] = new_d_tau;
 
       return new_state;
     }
@@ -62,27 +72,22 @@ class AckermannModel : public Model {
     M update_jacobian(double dt) {
       M F_k = MatrixXd::Identity(S, S);
 
-      double p_yaw_dx = dt * sin(tau_) / wheelbase;
-      double p_yaw_tau = dt * d_x_ * cos(tau_) / wheelbase;
+      F_k(x__, d_x__) = dt * cos(yaw_ + tau_);
+      F_k(x__, yaw__) = -dt * d_x_ * sin(yaw_ + tau_);
+      F_k(x__, tau__) = -dt * d_x_ * sin(yaw_ + tau_);
 
-      double p_x_dx = dt * cos(yaw_ + tau_);
-      double p_x_yaw = -dt * d_x_ * sin(yaw_ + tau_);
-      double p_x_tau = -dt * d_x_ * sin(yaw_ + tau_);
+      F_k(y__, d_x__) = dt * sin(yaw_ + tau_);
+      F_k(y__, yaw__) = dt * d_x_ * cos(yaw_ + tau_);
+      F_k(y__, tau__) = dt * d_x_ * cos(yaw_ + tau_);
 
-      double p_y_dx = dt * sin(yaw_ + tau_);
-      double p_y_yaw = dt * d_x_ * cos(yaw_ + tau_);
-      double p_y_tau = dt * d_x_ * cos(yaw_ + tau_);
+      F_k(yaw__, d_x__) = dt * sin(tau_) / wheelbase;
+      F_k(yaw__, tau__) = dt * d_x_ * cos(tau_) / wheelbase;
 
-      F_k(x__, d_x__) = p_x_dx;
-      F_k(x__, yaw__) = p_x_yaw;
-      F_k(x__, tau__) = p_x_tau;
+      F_k(d_x__, d2_x__) = dt;
+      F_k(d_y__, d2_y__) = dt;
 
-      F_k(y__, d_x__) = p_y_dx;
-      F_k(y__, yaw__) = p_y_yaw;
-      F_k(y__, tau__) = p_y_tau;
-
-      F_k(yaw__, d_x__) = p_yaw_dx;
-      F_k(yaw__, tau__) = p_yaw_tau;
+      // F_k(tau__, d_tau__) = dt;
+      // F_k(d_tau__, d2_tau__) = dt;
 
       return F_k;
     }
@@ -93,11 +98,17 @@ class AckermannModel : public Model {
 };
 
 class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
+  protected:
+    double initial_yaw;
+    bool initialized = false;
+    bool relative = true;
+
   public:
     IMUSensor(
       V state,
       M covariance, 
-      std::vector<std::shared_ptr<Model>> dependents
+      std::vector<std::shared_ptr<Model>> dependents,
+      bool relative = true
     ) : RosSensor<sensor_msgs::msg::Imu>(
         state, 
         covariance,
@@ -107,6 +118,8 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
       multiplier(d2_x__, d2_x__) = 1.0;
       multiplier(d2_y__, d2_y__) = 1.0;
       multiplier(yaw__, yaw__) = 1.0;
+
+      this->relative = relative;
     }
 
     StatePackage msg_update(sensor_msgs::msg::Imu::SharedPtr msg) {
@@ -128,7 +141,15 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
       tf2::Matrix3x3 m(q);
       double roll, pitch, yaw;
       m.getRPY(roll, pitch, yaw);
-      estimate.state[yaw__] = yaw;
+
+      yaw = fmod(yaw, 2 * M_PI);
+
+      if (!initialized) {
+        initial_yaw = yaw;
+        initialized = true;
+      }
+
+      estimate.state[yaw__] = relative ? fmod(yaw - initial_yaw, 2 * M_PI) : yaw;
 
       return estimate;
     }
@@ -165,9 +186,9 @@ class AckermannEkfNode : public rclcpp::Node {
   public:
     AckermannEkfNode() : Node("AckermannEkfNode") {
       V start_state = V::Zero();
-      start_state[x__] = 2.0;
-      start_state[d_x__] = 1.0;
-      start_state[tau__] = 30 * M_PI / 180.0;
+      // start_state[x__] = 0.0;
+      // start_state[d_x__] = 0.0;
+      // start_state[tau__] = 30 * M_PI / 180.0;
 
       model->force_state(start_state);
 
@@ -189,8 +210,8 @@ class AckermannEkfNode : public rclcpp::Node {
     }
 
     void timer_callback() {
-      // double time = get_clock()->now().seconds();
-      // model->update(time);
+      double time = get_clock()->now().seconds();
+      model->update(time);
 
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = this->now();
@@ -251,9 +272,9 @@ class AckermannEkfNode : public rclcpp::Node {
       std::make_shared<AckermannModel>(
         AckermannModel(
           V::Zero(),
-          M::Identity() * .1,
-          M::Identity() * .1,
-          1.0
+          M::Identity() * .05,
+          M::Identity() * .05,
+          .3
         )
     );
 
@@ -265,7 +286,7 @@ class AckermannEkfNode : public rclcpp::Node {
 
     OdomSensor odom = OdomSensor(
       V::Zero(),
-      M::Identity() * .1,
+      M::Identity() * .05,
       {model}
     );
 };
