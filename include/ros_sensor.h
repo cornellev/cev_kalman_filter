@@ -23,6 +23,10 @@ class RosSensor : public Sensor {
                 dependents
             ) {}
 
+
+        /**
+         * Handle a new message. Meant to be used as or in a message subscriber.
+         */
         void msg_handler(typename T::SharedPtr msg) {
             StatePackage update = msg_update(msg);
             updateInternals(update);

@@ -92,16 +92,16 @@ class Model : public Estimator {
      */
     void estimate_update(Estimator &estimate);
 
-    void force_state(V state) {
-      this->state = state;
-    }
-
     /**
      * Bind a model to this updater
      * 
      * @param model Model to bind
      */
     void bind_to(std::shared_ptr<Model> model);
+
+    void force_state(V state) {
+      this->state = state;
+    }
 
     /**
      * Update all bound models

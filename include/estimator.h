@@ -21,6 +21,8 @@ where tau = steering_angle
 
 static constexpr int S = 18;
 
+
+
 #define x__          0
 #define y__          1
 #define z__          2
@@ -107,10 +109,10 @@ class Estimator {
         V state;
         M covariance;
 
-        double previous_update_time;
-        double most_recent_update_time;
+        double previous_update_time = 0.0;
+        double most_recent_update_time = 0.0;
 
-        bool initialized;
+        bool initialized = false;
 
     public:
         /**
