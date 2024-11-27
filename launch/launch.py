@@ -36,7 +36,7 @@ def generate_launch_description():
                 '0', '0', '0',  # Translation: x = 0.035, y = 0.04, z = 0 (meters)
                 '0', '0', '0', '1', # Rotation: 0
                 'odom',
-                'base_link'
+                'meow_link'
             ]
         ),
         Node(
@@ -44,6 +44,6 @@ def generate_launch_description():
             executable='ackermann_ekf',
             name='ackermann_ekf_node',
             output='screen',
-            arguments=['--ros-args', '--log-level', 'DEBUG'],
+            # arguments=['--ros-args', '--log-level', 'DEBUG'],
         ),
     ])
