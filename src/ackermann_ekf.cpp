@@ -123,7 +123,7 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
         dependents
       ) 
     {
-      multiplier(d2_x__, d2_x__) = 1.0;
+      // multiplier(d2_x__, d2_x__) = 1.0;
       // multiplier(d2_y__, d2_y__) = 1.0;
       multiplier(yaw__, yaw__) = 1.0;
 
@@ -136,7 +136,7 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
 
       estimate.update_time = msg->header.stamp.sec + (msg->header.stamp.nanosec / 1e9);
 
-      estimate.state[d2_x__] = msg->linear_acceleration.x;
+      // estimate.state[d2_x__] = msg->linear_acceleration.x;
       // estimate.state[d2_y__] = msg->linear_acceleration.y;
 
       // Get yaw from quaternion
@@ -230,8 +230,8 @@ class AckermannEkfNode : public rclcpp::Node {
     }
 
     void timer_callback() {
-      double time = get_clock()->now().seconds();
-      model->update(time);
+      // double time = get_clock()->now().seconds();
+      // model->update(time);
 
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = this->now();
