@@ -98,10 +98,18 @@ class AckermannModel : public Model {
 };
 
 class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
+  private:
+    double pos_mod(double angle) {
+      return fmod(fmod(angle, 2 * M_PI) + 2 * M_PI, 2 * M_PI);
+    }
+
   protected:
-    double initial_yaw;
     bool initialized = false;
     bool relative = true;
+
+    double initial_yaw;
+    double last_reported_yaw = 0;
+    double last_sensor_raw_yaw = 0;
 
   public:
     IMUSensor(
@@ -115,8 +123,8 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
         dependents
       ) 
     {
-      multiplier(d2_x__, d2_x__) = 1.0;
-      multiplier(d2_y__, d2_y__) = 1.0;
+      // multiplier(d2_x__, d2_x__) = 1.0;
+      // multiplier(d2_y__, d2_y__) = 1.0;
       multiplier(yaw__, yaw__) = 1.0;
 
       this->relative = relative;
@@ -128,8 +136,8 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
 
       estimate.update_time = msg->header.stamp.sec + (msg->header.stamp.nanosec / 1e9);
 
-      estimate.state[d2_x__] = msg->linear_acceleration.x;
-      estimate.state[d2_y__] = msg->linear_acceleration.y;
+      // estimate.state[d2_x__] = msg->linear_acceleration.x;
+      // estimate.state[d2_y__] = msg->linear_acceleration.y;
 
       // Get yaw from quaternion
       tf2::Quaternion q(
@@ -142,14 +150,29 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
       double roll, pitch, yaw;
       m.getRPY(roll, pitch, yaw);
 
-      yaw = fmod(yaw, 2 * M_PI);
-
-      if (!initialized) {
-        initial_yaw = yaw;
+      if (relative && !initialized) {
+        last_sensor_raw_yaw = yaw;
+        last_reported_yaw = 0.0;
         initialized = true;
+
+        estimate.state[yaw__] = 0.0;
+        return estimate;
       }
 
-      estimate.state[yaw__] = relative ? fmod(yaw - initial_yaw, 2 * M_PI) : yaw;
+      double modded_yaw_diff = fmod(yaw - last_sensor_raw_yaw, 2 * M_PI);
+
+      if (modded_yaw_diff > M_PI) {
+        modded_yaw_diff -= 2 * M_PI;
+      } else if (modded_yaw_diff < -M_PI) {
+        modded_yaw_diff += 2 * M_PI;
+      }
+
+      last_reported_yaw += modded_yaw_diff;
+      last_sensor_raw_yaw = yaw;
+
+      estimate.state[yaw__] = last_reported_yaw;
+
+      std::cout << "Yaw: " << yaw << " Last: " << last_reported_yaw << std::endl;
 
       return estimate;
     }
@@ -186,15 +209,12 @@ class AckermannEkfNode : public rclcpp::Node {
   public:
     AckermannEkfNode() : Node("AckermannEkfNode") {
       V start_state = V::Zero();
-      // start_state[x__] = 0.0;
-      // start_state[d_x__] = 0.0;
-      // start_state[tau__] = 30 * M_PI / 180.0;
 
       model->force_state(start_state);
 
-      imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
-        "imu", 1, std::bind(&IMUSensor::msg_handler, &imu, _1)
-      );
+      // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
+      //   "imu", 1, std::bind(&IMUSensor::msg_handler, &imu, _1)
+      // );
 
       odom_sub = this->create_subscription<cev_msgs::msg::SensorCollect>(
         "sensor_collect", 1, std::bind(&OdomSensor::msg_handler, &odom, _1)
@@ -210,13 +230,13 @@ class AckermannEkfNode : public rclcpp::Node {
     }
 
     void timer_callback() {
-      double time = get_clock()->now().seconds();
-      model->update(time);
+      // double time = get_clock()->now().seconds();
+      // model->update(time);
 
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = this->now();
       odom_msg.header.frame_id = "odom";
-      odom_msg.child_frame_id = "base_link";
+      odom_msg.child_frame_id = "meow_link";
 
       V state = model->get_state();
 
@@ -243,7 +263,7 @@ class AckermannEkfNode : public rclcpp::Node {
 
       transformStamped.header.stamp = this->now();
       transformStamped.header.frame_id = "odom";
-      transformStamped.child_frame_id = "base_link";
+      transformStamped.child_frame_id = "meow_link";
 
       transformStamped.transform.translation.x = state[x__];
       transformStamped.transform.translation.y = state[y__];
@@ -254,7 +274,7 @@ class AckermannEkfNode : public rclcpp::Node {
       transformStamped.transform.rotation.z = q.z();
       transformStamped.transform.rotation.w = q.w();
 
-      // tf_broadcaster_->sendTransform(transformStamped);
+      tf_broadcaster_->sendTransform(transformStamped);
     }
 
   private:
@@ -274,7 +294,7 @@ class AckermannEkfNode : public rclcpp::Node {
           V::Zero(),
           M::Identity() * .05,
           M::Identity() * .05,
-          .3
+          .185
         )
     );
 
