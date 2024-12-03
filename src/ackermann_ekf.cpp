@@ -46,6 +46,7 @@ class AckermannModel : public Model {
       double dt = time - most_recent_update_time;
 
       double d_yaw = d_x_ * (sin(tau_) / wheelbase) * dt;
+      // double new_yaw = yaw_ + ((d_yaw_ + d_yaw) / 2.0);
       double new_yaw = yaw_ + d_yaw;
 
       double new_d_x = d_x_ + d2_x_ * dt;
@@ -63,6 +64,7 @@ class AckermannModel : public Model {
       new_state[d_x__] = new_d_x;
       new_state[d_y__] = new_d_y;
       new_state[yaw__] = new_yaw;
+      // new_state[d_yaw__] = d_yaw; 
       new_state[tau__] = new_tau;
       // new_state[d_tau__] = new_d_tau;
 
@@ -123,8 +125,8 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
         dependents
       ) 
     {
-      // multiplier(d2_x__, d2_x__) = 1.0;
-      // multiplier(d2_y__, d2_y__) = 1.0;
+      multiplier(d2_x__, d2_x__) = 1.0;
+      multiplier(d2_y__, d2_y__) = 1.0;
       multiplier(yaw__, yaw__) = 1.0;
 
       this->relative = relative;
@@ -136,8 +138,8 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
 
       estimate.update_time = msg->header.stamp.sec + (msg->header.stamp.nanosec / 1e9);
 
-      // estimate.state[d2_x__] = msg->linear_acceleration.x;
-      // estimate.state[d2_y__] = msg->linear_acceleration.y;
+      estimate.state[d2_x__] = msg->linear_acceleration.x;
+      estimate.state[d2_y__] = msg->linear_acceleration.y;
 
       // Get yaw from quaternion
       tf2::Quaternion q(
@@ -171,8 +173,6 @@ class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
       last_sensor_raw_yaw = yaw;
 
       estimate.state[yaw__] = last_reported_yaw;
-
-      std::cout << "Yaw: " << yaw << " Last: " << last_reported_yaw << std::endl;
 
       return estimate;
     }
@@ -212,9 +212,9 @@ class AckermannEkfNode : public rclcpp::Node {
 
       model->force_state(start_state);
 
-      // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
-      //   "imu", 1, std::bind(&IMUSensor::msg_handler, &imu, _1)
-      // );
+      imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
+        "imu", 1, std::bind(&IMUSensor::msg_handler, &imu, _1)
+      );
 
       odom_sub = this->create_subscription<cev_msgs::msg::SensorCollect>(
         "sensor_collect", 1, std::bind(&OdomSensor::msg_handler, &odom, _1)
@@ -292,8 +292,8 @@ class AckermannEkfNode : public rclcpp::Node {
       std::make_shared<AckermannModel>(
         AckermannModel(
           V::Zero(),
-          M::Identity() * .05,
-          M::Identity() * .05,
+          M::Identity() * .1,
+          M::Identity() * .1,
           .185
         )
     );
@@ -306,7 +306,7 @@ class AckermannEkfNode : public rclcpp::Node {
 
     OdomSensor odom = OdomSensor(
       V::Zero(),
-      M::Identity() * .05,
+      M::Identity() * .1,
       {model}
     );
 };
