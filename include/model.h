@@ -11,15 +11,6 @@ class Model : public Estimator {
     std::vector<std::shared_ptr<Model>> models;
 
     /**
-     * Next state and covariance without adjusting with a sensor update.
-     *
-     * @param time Time to predict to
-     *
-     * @return Next state and covariance
-     */
-    std::pair<V, M> predict(double time);
-
-    /**
      * Perform a model update step up to `time`.
      *
      * @param time Time to update to
@@ -78,6 +69,15 @@ class Model : public Estimator {
       M process_covariance,
       std::vector<std::shared_ptr<Model>> dependents = {}
     );
+
+    /**
+     * Next state and covariance without adjusting with a sensor update.
+     *
+     * @param time Time to predict to
+     *
+     * @return Next state and covariance
+     */
+    std::pair<V, M> predict(double time);
 
     /**
      * Update the state/covariance with no sensor estimate.

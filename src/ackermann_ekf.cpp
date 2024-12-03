@@ -230,15 +230,18 @@ class AckermannEkfNode : public rclcpp::Node {
     }
 
     void timer_callback() {
-      // double time = get_clock()->now().seconds();
+      double time = get_clock()->now().seconds();
       // model->update(time);
+      std::pair<V, M> prediction = model->predict(time);
+      V state = prediction.first;
+      // M covariance = prediction.second;
 
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = this->now();
       odom_msg.header.frame_id = "odom";
       odom_msg.child_frame_id = "meow_link";
 
-      V state = model->get_state();
+      // V state = model->get_state();
 
       odom_msg.pose.pose.position.x = state[x__];
       odom_msg.pose.pose.position.y = state[y__];
