@@ -56,21 +56,16 @@ void Model::estimate_update(
 
   std::pair<V, M> prediction = predict(estimate.get_most_recent_update_time());
   V st = prediction.first;
-
   M cov = prediction.second;
 
   M H_k = sensor_jacobian(estimate);
-
   M R_k = estimate.get_covariance();
 
   V predicted_sensor = estimate.state_matrix_multiplier() * st;
-
   V real_sensor = estimate.get_state();
-
   V y_k = real_sensor - predicted_sensor;
 
   M S_k = H_k * cov * H_k.transpose() + R_k;
-
   M K_k = cov * H_k.transpose() * S_k.inverse();
 
   this->state = st + K_k * y_k;

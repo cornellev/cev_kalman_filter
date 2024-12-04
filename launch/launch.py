@@ -12,7 +12,7 @@ def get_path(package, dir, file):
     )
 
 def generate_launch_description():
-    rviz2_config = get_path("ackermann_ekf", "config", "conf.rviz")
+    rviz2_config = get_path("cev_localization", "config", "conf.rviz")
 
     return LaunchDescription([
         Node(
@@ -52,9 +52,9 @@ def generate_launch_description():
             ]
         ),
         Node(
-            package='ackermann_ekf',
+            package='cev_localization',
             executable='ackermann_ekf',
-            name='ackermann_ekf_node',
+            name='cev_localization_node',
             output='screen',
             # arguments=['--ros-args', '--log-level', 'DEBUG'],
         ),
