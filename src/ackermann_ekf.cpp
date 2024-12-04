@@ -226,7 +226,7 @@ class AckermannEkfNode : public rclcpp::Node {
 
       tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
-      odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odometry/meow", 1);
+      odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odometry/filtered", 1);
     }
 
     void timer_callback() {
@@ -239,7 +239,7 @@ class AckermannEkfNode : public rclcpp::Node {
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = this->now();
       odom_msg.header.frame_id = "odom";
-      odom_msg.child_frame_id = "meow_link";
+      odom_msg.child_frame_id = "base_link";
 
       // V state = model->get_state();
 
@@ -266,7 +266,7 @@ class AckermannEkfNode : public rclcpp::Node {
 
       transformStamped.header.stamp = this->now();
       transformStamped.header.frame_id = "odom";
-      transformStamped.child_frame_id = "meow_link";
+      transformStamped.child_frame_id = "base_link";
 
       transformStamped.transform.translation.x = state[x__];
       transformStamped.transform.translation.y = state[y__];
