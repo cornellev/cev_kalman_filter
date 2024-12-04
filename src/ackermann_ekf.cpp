@@ -232,12 +232,12 @@ class AckermannEkfNode : public rclcpp::Node {
     void timer_callback() {
       double time = get_clock()->now().seconds();
       
-      model->update(time);
-      V state = model->get_state();
+      // model->update(time);
+      // V state = model->get_state();
 
-      // std::pair<V, M> prediction = model->predict(time);
-      // V state = prediction.first;
-      // M covariance = prediction.second;
+      std::pair<V, M> prediction = model->predict(time);
+      V state = prediction.first;
+      M covariance = prediction.second;
 
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = this->now();
@@ -246,8 +246,11 @@ class AckermannEkfNode : public rclcpp::Node {
 
       odom_msg.pose.pose.position.x = state[x__];
       odom_msg.pose.pose.position.y = state[y__];
-
       odom_msg.pose.pose.position.z = 0.0;
+
+      odom_msg.pose.covariance[0] = covariance(x__, x__);
+      odom_msg.pose.covariance[7] = covariance(y__, y__);
+      odom_msg.pose.covariance[35] = covariance(yaw__, yaw__);
 
       tf2::Quaternion q = tf2::Quaternion();
       q.setRPY(0, 0, state[yaw__]);
@@ -260,6 +263,10 @@ class AckermannEkfNode : public rclcpp::Node {
       odom_msg.twist.twist.linear.x = state[d_x__];
       odom_msg.twist.twist.linear.y = state[d_y__];
       odom_msg.twist.twist.angular.z = state[d_yaw__];
+
+      odom_msg.twist.covariance[0] = covariance(d_x__, d_x__);
+      odom_msg.twist.covariance[7] = covariance(d_y__, d_y__);
+      odom_msg.twist.covariance[35] = covariance(d_yaw__, d_yaw__);
 
       odom_pub->publish(odom_msg);
 
