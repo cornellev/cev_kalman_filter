@@ -19,6 +19,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 find_package(cev_msgs REQUIRED)
 
@@ -43,6 +44,11 @@ add_library(ros_sensor
     include/ros_sensor.h
 )
 
+add_library(config_parser
+    src/config_parser.cpp
+    include/config_parser.h
+)
+
 # add_library(updateable
 #     src/updateable.cpp
 #     include/updateable.h
@@ -57,12 +63,13 @@ include_directories(estimator include)
 include_directories(model include)
 include_directories(sensor include)
 include_directories(ros_sensor include)
+include_directories(config_loader include)
 # include_directories(updateable include)
 # include_directories(updater include)
 
 add_executable(ackermann_ekf src/ackermann_ekf.cpp)
 # target_link_libraries(ackermann_ekf estimator model sensor ros_sensor updateable updater)
-target_link_libraries(ackermann_ekf estimator model sensor ros_sensor)
+target_link_libraries(ackermann_ekf estimator model sensor ros_sensor yaml-cpp config_parser)
 ament_target_dependencies(ackermann_ekf rclcpp sensor_msgs std_msgs Eigen3 cev_msgs tf2 tf2_ros tf2_geometry_msgs nav_msgs)
 
 install(TARGETS
