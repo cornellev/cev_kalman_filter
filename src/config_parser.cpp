@@ -1,5 +1,7 @@
 #include "config_parser.h"
 
+using namespace config_parser;
+
 Config ConfigParser::loadConfig(const std::string& filePath) {
     YAML::Node configNode = YAML::LoadFile(filePath);
 

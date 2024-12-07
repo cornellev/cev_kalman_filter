@@ -8,6 +8,7 @@
 
 #include "model.h"
 #include "ros_sensor.h"
+#include "config_parser.h"
 
 #include "sensor_msgs/msg/imu.hpp"
 #include "nav_msgs/msg/odometry.hpp"
@@ -185,6 +186,14 @@ class AckermannEkfNode : public rclcpp::Node {
 public:
     AckermannEkfNode(): Node("AckermannEkfNode") {
         RCLCPP_INFO(this->get_logger(), "Initializing Ackermann EKF Node");
+
+        this->declare_parameter<std::string>("config_file", "config/ekf_real.yml");
+        std::string config_file_path = this->get_parameter("config_file").as_string();
+
+        // Load the YAML configuration
+        config_parser::Config config = config_parser::ConfigParser::loadConfig(config_file_path);
+
+        std::cout << config.time_step << std::endl;
 
         V start_state = V::Zero();
 

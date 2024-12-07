@@ -63,9 +63,12 @@ include_directories(estimator include)
 include_directories(model include)
 include_directories(sensor include)
 include_directories(ros_sensor include)
-include_directories(config_loader include)
+include_directories(config_parser include)
 # include_directories(updateable include)
 # include_directories(updater include)
+
+target_link_libraries(config_parser yaml-cpp)
+ament_target_dependencies(config_parser yaml-cpp)
 
 add_executable(ackermann_ekf src/ackermann_ekf.cpp)
 # target_link_libraries(ackermann_ekf estimator model sensor ros_sensor updateable updater)

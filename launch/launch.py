@@ -17,6 +17,13 @@ def generate_launch_description():
                 executable="ackermann_ekf",
                 name="cev_localization_node",
                 output="screen",
+                parameters=[
+                    {
+                        "config_file": get_path(
+                            "cev_localization", "config", "ekf_real.yml"
+                        )
+                    }
+                ],
             )
         ]
     )
