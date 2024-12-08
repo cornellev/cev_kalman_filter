@@ -1,6 +1,8 @@
 # Set the project name for your library
 project(cev_kalman_filter)
 
+find_package(Eigen3 REQUIRED)
+
 # Add the include directory
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -16,3 +18,5 @@ add_library(cev_kalman_filter STATIC
 target_include_directories(cev_kalman_filter PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
