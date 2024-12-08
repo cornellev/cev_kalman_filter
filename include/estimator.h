@@ -18,7 +18,7 @@ where tau = steering_angle
 */
 
 namespace ckf {
-    
+
     using namespace Eigen;
 
     constexpr int S = 18;  // State size

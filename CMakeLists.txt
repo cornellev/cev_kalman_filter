@@ -16,6 +16,7 @@ add_library(${PROJECT_NAME} STATIC
   src/estimator.cpp
   src/model.cpp
   src/sensor.cpp
+  src/standard_models.cpp
 )
 
 # Link Eigen3 specifically to the estimator component
