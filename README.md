@@ -1,2 +1,2 @@
-# kalman_odom
-ROS 2 package for Ackermann Model EKF-based localization (in development)
+# CEV Kalman Filter
+Generalized library for creating custom Kalman Filters. Currently only Extended Kalman Filters are supported.
