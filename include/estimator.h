@@ -4,8 +4,6 @@
 #include <iostream>
 #include <string>
 
-using namespace Eigen;
-
 /*
 State: [
   x,      y,      z,
@@ -20,6 +18,8 @@ where tau = steering_angle
 */
 
 namespace ckf {
+    
+    using namespace Eigen;
 
     constexpr int S = 18;  // State size
 
