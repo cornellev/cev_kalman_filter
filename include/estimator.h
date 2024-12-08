@@ -19,150 +19,139 @@ State: [
 where tau = steering_angle
 */
 
-static constexpr int S = 18;
+namespace ckf {
 
-#define x__ 0
-#define y__ 1
-#define z__ 2
-#define roll__ 3
-#define pitch__ 4
-#define yaw__ 5
-#define d_x__ 6
-#define d_y__ 7
-#define d_z__ 8
-#define d_roll__ 9
-#define d_pitch__ 10
-#define d_yaw__ 11
-#define d2_x__ 12
-#define d2_y__ 13
-#define d2_z__ 14
-#define tau__ 15
-#define d_tau__ 16
-#define d2_tau__ 17
+    constexpr int S = 18;  // State size
 
-#define x_ state[x__]
-#define y_ state[y__]
-#define z_ state[z__]
-#define roll_ state[roll__]
-#define pitch_ state[pitch__]
-#define yaw_ state[yaw__]
-#define d_x_ state[d_x__]
-#define d_y_ state[d_y__]
-#define d_z_ state[d_z__]
-#define d_roll_ state[d_roll__]
-#define d_pitch_ state[d_pitch__]
-#define d_yaw_ state[d_yaw__]
-#define d2_x_ state[d2_x__]
-#define d2_y_ state[d2_y__]
-#define d2_z_ state[d2_z__]
-#define tau_ state[tau__]
-#define d_tau_ state[d_tau__]
-#define d2_tau_ state[d2_tau__]
+    namespace state {
+        const int x = 0;
+        const int y = 1;
+        const int z = 2;
+        const int roll = 3;
+        const int pitch = 4;
+        const int yaw = 5;
+        const int d_x = 6;
+        const int d_y = 7;
+        const int d_z = 8;
+        const int d_roll = 9;
+        const int d_pitch = 10;
+        const int d_yaw = 11;
+        const int d2_x = 12;
+        const int d2_y = 13;
+        const int d2_z = 14;
+        const int tau = 15;
+        const int d_tau = 16;
+        const int d2_tau = 17;
+    }
 
-// V represents a Vector of the state size
-using V = Vector<double, S>;
-// M represents a matrix of state x state size
-using M = Matrix<double, S, S>;
-
-/**
- * @struct StatePackage
- * Package for a estimate update
- */
-struct StatePackage {
-    V state;
-    M covariance;
-    double update_time;
-};
-
-/**
- * @struct SimpleStatePackage
- * Struct for a simple state update, no covariance
- */
-struct SimpleStatePackage {
-    V state;
-    double update_time;
-};
-
-class Estimator {
-protected:
-    V state;
-    M covariance;
-
-    double previous_update_time = 0.0;
-    double most_recent_update_time = 0.0;
-
-    bool initialized = false;
-
-public:
-    /**
-     * Base class for a model with a state and covariance
-     *
-     * @param state Start state
-     * @param covariance Start covariance
-     */
-    Estimator(V state, M covariance);
+    // V represents a Vector of the state size
+    using V = Vector<double, S>;
+    // M represents a matrix of state x state size
+    using M = Matrix<double, S, S>;
 
     /**
-     * Current state of the sensor
-     *
-     * @return Current sensor state
+     * @struct StatePackage
+     * Package for a estimate update
      */
-    V get_state();
+    struct StatePackage {
+        V state;
+        M covariance;
+        double update_time;
+    };
 
     /**
-     * Covariance of the sensor
-     *
-     * @return Sensor covariance
+     * @struct SimpleStatePackage
+     * Struct for a simple state update, no covariance
      */
-    M get_covariance();
+    struct SimpleStatePackage {
+        V state;
+        double update_time;
+    };
 
-    /**
-     * Get the estimate internals
-     *
-     * @return Estimate internals
-     */
-    StatePackage get_internals();
+    class Estimator {
+    protected:
+        V state;
+        M covariance;
 
-    /**
-     * Update the model estimate data with a simple state and time update
-     *
-     * @param package Package of state and time
-     */
-    void updateInternals(SimpleStatePackage package);
+        double previous_update_time = 0.0;
+        double most_recent_update_time = 0.0;
 
-    /**
-     * Update the model estimate data
-     *
-     * @param package Package of state, covariance, and time
-     */
-    void updateInternals(StatePackage package);
+        bool initialized = false;
 
-    /**
-     * Get the time of the most recent update
-     *
-     * @return Time of most recent update
-     */
-    double get_most_recent_update_time();
+    public:
+        /**
+         * Base class for a model with a state and covariance
+         *
+         * @param state Start state
+         * @param covariance Start covariance
+         */
+        Estimator(V state, M covariance);
 
-    /**
-     * Get the previous update time
-     *
-     * @return Previous update time
-     */
-    double get_previous_update_time();
+        /**
+         * Current state of the sensor
+         *
+         * @return Current sensor state
+         */
+        V get_state();
 
-    /**
-     * Get the time since the most recent update
-     *
-     * @return Time since most recent update
-     */
-    double dt();
+        /**
+         * Covariance of the sensor
+         *
+         * @return Sensor covariance
+         */
+        M get_covariance();
 
-    /**
-     * Matrix that, when left multiplied by a state vector,
-     * gives a state matrix in the form of this model.
-     *
-     * @return Multiplier matrix
-     */
-    virtual M state_matrix_multiplier() = 0;
-};
+        /**
+         * Get the estimate internals
+         *
+         * @return Estimate internals
+         */
+        StatePackage get_internals();
+
+        /**
+         * Update the model estimate data with a simple state and time update
+         *
+         * @param package Package of state and time
+         */
+        void updateInternals(SimpleStatePackage package);
+
+        /**
+         * Update the model estimate data
+         *
+         * @param package Package of state, covariance, and time
+         */
+        void updateInternals(StatePackage package);
+
+        /**
+         * Get the time of the most recent update
+         *
+         * @return Time of most recent update
+         */
+        double get_most_recent_update_time();
+
+        /**
+         * Get the previous update time
+         *
+         * @return Previous update time
+         */
+        double get_previous_update_time();
+
+        /**
+         * Get the time since the most recent update
+         *
+         * @return Time since most recent update
+         */
+        double dt();
+
+        /**
+         * Matrix that, when left multiplied by a state vector,
+         * gives a state matrix in the form of this model.
+         *
+         * @return Multiplier matrix
+         */
+        virtual M state_matrix_multiplier() = 0;
+
+        static M state_mask_to_matrix(std::vector<bool> mask);
+    };
+
+}

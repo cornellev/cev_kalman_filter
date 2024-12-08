@@ -1,10 +1,9 @@
 #include "sensor.h"
 
-Sensor::Sensor(
-    V state, 
-    M covariance,
-    std::vector<std::shared_ptr<Model>> dependents
-) : Estimator(state, covariance) {
+using namespace ckf;
+
+Sensor::Sensor(V state, M covariance, std::vector<std::shared_ptr<Model>> dependents)
+    : Estimator(state, covariance) {
     models = dependents;
 }
 
@@ -15,7 +14,7 @@ void Sensor::bind_to(std::shared_ptr<Model> model) {
 void Sensor::update_dependents() {
     Estimator* self = this;
 
-    for (std::shared_ptr<Model> model : models) {
+    for (std::shared_ptr<Model> model: models) {
         model->estimate_update(*self);
     }
 }
