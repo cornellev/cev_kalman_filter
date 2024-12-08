@@ -1,40 +1,18 @@
-cmake_minimum_required(VERSION 3.10)
+# Set the project name for your library
 project(cev_kalman_filter)
 
-# Set the C++ standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Add the include directory
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# Find Eigen3
-find_package(Eigen3 REQUIRED)
-
-# Include directories
-include_directories(include)
-
-# Add library
-add_library(${PROJECT_NAME} STATIC
-  src/estimator.cpp
-  src/model.cpp
-  src/sensor.cpp
-  src/standard_models.cpp
+# Compile the library (static or shared)
+add_library(cev_kalman_filter STATIC
+    src/estimator.cpp
+    src/model.cpp
+    src/sensor.cpp
+    src/standard_models.cpp
 )
 
-# Link Eigen3 specifically to the estimator component
-target_include_directories(${PROJECT_NAME}
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
-
-# Install library
-install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
-)
-
-# Install headers
-install(DIRECTORY include/
-  DESTINATION include
+# Specify the include directory so other projects can find the headers
+target_include_directories(cev_kalman_filter PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
