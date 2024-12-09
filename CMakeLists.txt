@@ -14,9 +14,4 @@ add_library(cev_kalman_filter STATIC
     src/standard_models.cpp
 )
 
-# Specify the include directory so other projects can find the headers
-target_include_directories(cev_kalman_filter PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
+target_link_libraries(cev_kalman_filter Eigen3::Eigen)
