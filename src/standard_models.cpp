@@ -5,18 +5,10 @@ namespace ckf {
     namespace standard_models {
         // Constructor definition
         AckermannModel::AckermannModel(V state, M covariance, M process_covariance,
-            double wheelbase)
+            double wheelbase, std::vector<std::string> state_mask)
             : Model(state, covariance, process_covariance) {
             this->wheelbase = wheelbase;
-
-            // State: [x, y, x', y', yaw, steering_angle] where x', y', and steering_angle are
-            // relative to the current orientation
-            multiplier(state::x, state::x) = 1;
-            multiplier(state::y, state::y) = 1;
-            multiplier(state::d_x, state::d_x) = 1;
-            multiplier(state::d_y, state::d_y) = 1;
-            multiplier(state::yaw, state::yaw) = 1;
-            multiplier(state::tau, state::tau) = 1;
+            multiplier = state_mask_to_matrix(state_mask);
         }
 
         // Update step definition

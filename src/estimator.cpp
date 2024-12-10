@@ -46,10 +46,10 @@ double Estimator::dt() {
     return most_recent_update_time - previous_update_time;
 }
 
-M Estimator::state_mask_to_matrix(std::vector<bool> mask) {
-    M mask_matrix = M::Zero(mask.size(), mask.size());
-    for (int i = 0; i < mask.size(); i++) {
-        mask_matrix(i, i) = mask[i];
+M Estimator::state_mask_to_matrix(std::vector<std::string> state_mask) {
+    M mask_matrix = M::Zero(S, S);
+    for (std::string& state: state_mask) {
+        mask_matrix(ckf::state::string_state.at(state), ckf::state::string_state.at(state)) = 1;
     }
     return mask_matrix;
 }
