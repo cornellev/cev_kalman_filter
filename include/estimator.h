@@ -3,6 +3,8 @@
 #include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 /*
 State: [
