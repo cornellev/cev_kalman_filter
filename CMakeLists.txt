@@ -1,6 +1,8 @@
 # Set the project name for your library
 project(cev_kalman_filter)
 
+cmake_minimum_required(VERSION 3.22)
+
 find_package(Eigen3 REQUIRED)
 
 # Add the include directory
