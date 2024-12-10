@@ -89,7 +89,7 @@ namespace ckf {
         // CARTESIAN MODEL
 
         CartesianModel::CartesianModel(V state, M covariance, M process_covariance,
-            double wheelbase, std::vector<std::string> state_mask)
+            std::vector<std::string> state_mask)
             : Model(state, covariance, process_covariance) {
             multiplier = state_mask_to_matrix(state_mask);
         }
