@@ -33,7 +33,7 @@ namespace ckf {
 
             double new_d_x = d_x_ + d2_x_ * dt;
             double new_d_y = d_y_ + d2_y_ * dt;
-            
+
             double new_tau = tau_ + d_tau_ * dt;
 
             double new_x = x_ + d_x_ * cos(yaw_ + tau_) * dt;
