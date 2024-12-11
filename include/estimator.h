@@ -45,6 +45,7 @@ namespace ckf {
         const int d_tau = 16;
         const int d2_tau = 17;
 
+        /* clang-format off */
         // String to index map
         const std::unordered_map<std::string, int> string_state = {
             {"x", x},
@@ -66,6 +67,7 @@ namespace ckf {
             {"d_tau", d_tau},
             {"d2_tau", d2_tau}
         };
+        /* clang-format on */
     }
 
     // V represents a Vector of the state size

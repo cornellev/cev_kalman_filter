@@ -11,7 +11,8 @@ namespace ckf {
 
         public:
             // Constructor
-            AckermannModel(V state, M covariance, M process_covariance, double wheelbase, std::vector<std::string> state_mask = {"x", "y", "d_x", "d_y", "yaw", "tau"});
+            AckermannModel(V state, M covariance, M process_covariance, double wheelbase,
+                std::vector<std::string> state_mask = {"x", "y", "d_x", "d_y", "yaw", "tau"});
 
             V update_step(double time);
             M update_jacobian(double dt);
@@ -26,7 +27,8 @@ namespace ckf {
 
         public:
             // Constructor
-            CartesianModel(V state, M covariance, M process_covariance, std::vector<std::string> state_mask = {"x", "y", "d_x", "d_y", "yaw", "d_yaw"});
+            CartesianModel(V state, M covariance, M process_covariance,
+                std::vector<std::string> state_mask = {"x", "y", "d_x", "d_y", "yaw", "d_yaw"});
 
             V update_step(double time);
             M update_jacobian(double dt);
