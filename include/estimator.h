@@ -45,12 +45,29 @@ namespace ckf {
         const int d_tau = 16;
         const int d2_tau = 17;
 
+        /* clang-format off */
         // String to index map
-        const std::unordered_map<std::string, int> string_state = {{"x", x}, {"y", y}, {"z", z},
-            {"roll", roll}, {"pitch", pitch}, {"yaw", yaw}, {"d_x", d_x}, {"d_y", d_y},
-            {"d_z", d_z}, {"d_roll", d_roll}, {"d_pitch", d_pitch}, {"d_yaw", d_yaw},
-            {"d2_x", d2_x}, {"d2_y", d2_y}, {"d2_z", d2_z}, {"tau", tau}, {"d_tau", d_tau},
-            {"d2_tau", d2_tau}};
+        const std::unordered_map<std::string, int> string_state = {
+            {"x", x},
+            {"y", y},
+            {"z", z},
+            {"roll", roll},
+            {"pitch", pitch},
+            {"yaw", yaw},
+            {"d_x", d_x},
+            {"d_y", d_y},
+            {"d_z", d_z},
+            {"d_roll", d_roll},
+            {"d_pitch", d_pitch},
+            {"d_yaw", d_yaw},
+            {"d2_x", d2_x},
+            {"d2_y", d2_y},
+            {"d2_z", d2_z},
+            {"tau", tau},
+            {"d_tau", d_tau},
+            {"d2_tau", d2_tau}
+        };
+        /* clang-format on */
     }
 
     // V represents a Vector of the state size
