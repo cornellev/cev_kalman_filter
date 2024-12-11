@@ -33,10 +33,11 @@ namespace ckf {
 
             double new_d_x = d_x_ + d2_x_ * dt;
             double new_d_y = d_y_ + d2_y_ * dt;
+            
             double new_tau = tau_ + d_tau_ * dt;
 
             double new_x = x_ + d_x_ * cos(yaw_ + tau_) * dt;
-            double new_y = y_ + d_y_ * sin(yaw_ + tau_) * dt;
+            double new_y = y_ + d_x_ * sin(yaw_ + tau_) * dt;
 
             V new_state = this->state;
 
@@ -111,17 +112,20 @@ namespace ckf {
             double new_yaw = yaw_ + d_yaw_ * dt;
 
             double new_d_x = d_x_ + d2_x_ * dt;
-            double new_d_y = d_y_ + d2_y_ * dt;
+            // double new_d_y = d_y_ + d2_y_ * dt;
 
             double new_x = x_ + d_x_ * cos(yaw_) * dt + .5 * d2_x_ * cos(yaw_) * dt * dt;
-            double new_y = y_ + d_y_ * sin(yaw_) * dt + .5 * d2_y_ * sin(yaw_) * dt * dt;
+            double new_y = y_ + d_x_ * sin(yaw_) * dt + .5 * d2_x_ * sin(yaw_) * dt * dt;
+
+            // double new_x = x_ + d_x_ * cos(yaw_) * dt;
+            // double new_y = y_ + d_x_ * sin(yaw_) * dt;
 
             V new_state = this->state;
 
             new_state[state::x] = new_x;
             new_state[state::y] = new_y;
             new_state[state::d_x] = new_d_x;
-            new_state[state::d_y] = new_d_y;
+            // new_state[state::d_y] = new_d_y;
             new_state[state::yaw] = new_yaw;
 
             return new_state;
@@ -141,17 +145,17 @@ namespace ckf {
 
             M F_k = MatrixXd::Identity(S, S);
 
-            F_k(state::x, state::d_x) = dt;
-            F_k(state::y, state::d_y) = dt;
+            F_k(state::x, state::d_x) = cos(yaw_) * dt;
+            F_k(state::y, state::d_y) = sin(yaw_) * dt;
 
             F_k(state::x, state::d2_x) = .5 * dt * dt;
-            F_k(state::y, state::d2_y) = .5 * dt * dt;
+            F_k(state::y, state::d2_x) = .5 * dt * dt;
 
             F_k(state::x, state::yaw) = -dt * d_x_ * sin(yaw_);
-            F_k(state::y, state::yaw) = dt * d_y_ * cos(yaw_);
+            F_k(state::y, state::yaw) = dt * d_x_ * cos(yaw_);
 
             F_k(state::d_x, state::d2_x) = dt;
-            F_k(state::d_y, state::d2_y) = dt;
+            // F_k(state::d_y, state::d2_y) = dt;
 
             F_k(state::yaw, state::d_yaw) = dt;
 
