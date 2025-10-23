@@ -116,35 +116,35 @@ namespace ckf {
          *
          * @return Current sensor state
          */
-        V get_state();
+        V get_state() const;
 
         /**
          * Covariance of the sensor
          *
          * @return Sensor covariance
          */
-        M get_covariance();
+        M get_covariance() const;
 
         /**
          * Get the estimate internals
          *
          * @return Estimate internals
          */
-        StatePackage get_internals();
+        StatePackage get_internals() const;
 
         /**
          * Update the model estimate data with a simple state and time update
          *
          * @param package Package of state and time
          */
-        void updateInternals(SimpleStatePackage package);
+        void updateInternals(const SimpleStatePackage& package);
 
         /**
          * Update the model estimate data
          *
          * @param package Package of state, covariance, and time
          */
-        void updateInternals(StatePackage package);
+        void updateInternals(const StatePackage& package);
 
         /**
          * Get the time of the most recent update
@@ -175,7 +175,7 @@ namespace ckf {
          */
         virtual M state_matrix_multiplier() = 0;
 
-        static M state_mask_to_matrix(std::vector<std::string> state_mask);
+        static M state_mask_to_matrix(const std::vector<std::string>& state_mask);
     };
 
 }

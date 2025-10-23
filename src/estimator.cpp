@@ -2,33 +2,30 @@
 
 using namespace ckf;
 
-Estimator::Estimator(V state, M covariance) {
-    this->state = state;
-    this->covariance = covariance;
-    this->most_recent_update_time = 0;
-    this->previous_update_time = 0;
+Estimator::Estimator(V state, M covariance)
+    : state(state), covariance(covariance) {
 }
 
-V Estimator::get_state() {
+V Estimator::get_state() const {
     return state;
 }
 
-M Estimator::get_covariance() {
+M Estimator::get_covariance() const {
     return covariance;
 }
 
-StatePackage Estimator::get_internals() {
+StatePackage Estimator::get_internals() const {
     return {state, covariance, most_recent_update_time};
 }
 
-void Estimator::updateInternals(StatePackage package) {
+void Estimator::updateInternals(const StatePackage& package) {
     state = package.state;
     covariance = package.covariance;
     previous_update_time = most_recent_update_time;
     most_recent_update_time = package.update_time;
 }
 
-void Estimator::updateInternals(SimpleStatePackage package) {
+void Estimator::updateInternals(const SimpleStatePackage& package) {
     state = package.state;
     previous_update_time = most_recent_update_time;
     most_recent_update_time = package.update_time;
@@ -46,10 +43,11 @@ double Estimator::dt() {
     return most_recent_update_time - previous_update_time;
 }
 
-M Estimator::state_mask_to_matrix(std::vector<std::string> state_mask) {
+M Estimator::state_mask_to_matrix(const std::vector<std::string>& state_mask) {
     M mask_matrix = M::Zero(S, S);
-    for (std::string& state: state_mask) {
-        mask_matrix(ckf::state::string_state.at(state), ckf::state::string_state.at(state)) = 1;
+    for (const std::string& state_name: state_mask) {
+        int state_index = ckf::state::string_state.at(state_name);
+        mask_matrix(state_index, state_index) = 1;
     }
     return mask_matrix;
 }

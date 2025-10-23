@@ -15,67 +15,55 @@ namespace ckf {
 
         // Update step definition
         V AckermannModel::update_step(double time) {
-            // Extract state definitions
-            double x_ = state[state::x];
-            double y_ = state[state::y];
-            double d_x_ = state[state::d_x];
-            double d_y_ = state[state::d_y];
-            double d2_x_ = state[state::d2_x];
-            double d2_y_ = state[state::d2_y];
-            double yaw_ = state[state::yaw];
-            double tau_ = state[state::tau];
-            double d_tau_ = state[state::d_tau];
-
             double dt = time - most_recent_update_time;
 
-            double d_yaw = d_x_ * (sin(tau_) / wheelbase) * dt;
-            double new_yaw = yaw_ + d_yaw;
+            double speed    = state[state::d_x];
+            double yaw      = state[state::yaw];
+            double steering = state[state::tau];
 
-            double new_d_x = d_x_ + d2_x_ * dt;
-            double new_d_y = d_y_ + d2_y_ * dt;
-            
-            double new_tau = tau_ + d_tau_ * dt;
-
-            double new_x = x_ + d_x_ * cos(yaw_ + tau_) * dt;
-            double new_y = y_ + d_x_ * sin(yaw_ + tau_) * dt;
+            double heading = yaw + steering;
+            double d_yaw   = speed * std::sin(steering) * dt / wheelbase;
+            double new_tau = steering + state[state::d_tau] * dt;
 
             V new_state = this->state;
 
-            new_state[state::x] = new_x;
-            new_state[state::y] = new_y;
-            new_state[state::d_x] = new_d_x;
-            new_state[state::d_y] = new_d_y;
-            new_state[state::yaw] = new_yaw;
-            new_state[state::tau] = new_tau;
+            new_state[ state::x ] += speed * std::cos(heading) * dt;
+            new_state[ state::y ] += speed * std::sin(heading) * dt;
+            new_state[state::d_x] =  speed + state[state::d2_x] * dt;
+            new_state[state::d_y] =  state[state::d_y] + state[state::d2_y] * dt;
+            new_state[state::yaw] += d_yaw;
+            new_state[state::tau] =  new_tau;
 
             return new_state;
         }
 
         // Update Jacobian definition
         M AckermannModel::update_jacobian(double dt) {
-            // Extract state definitions
-            double x_ = state[state::x];
-            double y_ = state[state::y];
-            double d_x_ = state[state::d_x];
-            double d_y_ = state[state::d_y];
-            double d2_x_ = state[state::d2_x];
-            double d2_y_ = state[state::d2_y];
-            double yaw_ = state[state::yaw];
-            double tau_ = state[state::tau];
+            double speed    = state[state::d_x];
+            double yaw      = state[state::yaw];
+            double steering = state[state::tau];
+            double heading  = yaw + steering;
 
             M F_k = MatrixXd::Identity(S, S);
 
-            F_k(state::x, state::d_x) = dt * cos(yaw_ + tau_);
-            F_k(state::x, state::yaw) = -dt * d_x_ * sin(yaw_ + tau_);
-            F_k(state::x, state::tau) = -dt * d_x_ * sin(yaw_ + tau_);
+            double cos_heading = std::cos(heading);
+            double sin_heading = std::sin(heading);
 
-            F_k(state::y, state::d_x) = dt * sin(yaw_ + tau_);
-            F_k(state::y, state::yaw) = dt * d_x_ * cos(yaw_ + tau_);
-            F_k(state::y, state::tau) = dt * d_x_ * cos(yaw_ + tau_);
+            // x partials
+            F_k(state::x, state::d_x) = dt * cos_heading;
+            F_k(state::x, state::yaw) = -dt * speed * sin_heading;
+            F_k(state::x, state::tau) = -dt * speed * sin_heading;
 
-            F_k(state::yaw, state::d_x) = dt * sin(tau_) / wheelbase;
-            F_k(state::yaw, state::tau) = dt * d_x_ * cos(tau_) / wheelbase;
+            // y partials
+            F_k(state::y, state::d_x) = dt * sin_heading;
+            F_k(state::y, state::yaw) = dt * speed * cos_heading;
+            F_k(state::y, state::tau) = dt * speed * cos_heading;
 
+            // yaw partials
+            F_k(state::yaw, state::d_x) = dt * std::sin(steering) / wheelbase;
+            F_k(state::yaw, state::tau) = dt * speed * std::cos(steering) / wheelbase;
+
+            // velocity partials
             F_k(state::d_x, state::d2_x) = dt;
             F_k(state::d_y, state::d2_y) = dt;
 
@@ -97,62 +85,45 @@ namespace ckf {
 
         // Update step definition
         V CartesianModel::update_step(double time) {
-            // Extract state definitions
-            double x_ = state[state::x];
-            double y_ = state[state::y];
-            double d_x_ = state[state::d_x];
-            double d_y_ = state[state::d_y];
-            double d2_x_ = state[state::d2_x];
-            double d2_y_ = state[state::d2_y];
-            double yaw_ = state[state::yaw];
-            double d_yaw_ = state[state::d_yaw];
+            double dt    = time - most_recent_update_time;
+            double yaw   = state[state::yaw];
+            double d_yaw = state[state::d_yaw];
+            double speed = state[state::d_x];
+            double accel = state[state::d2_x];
 
-            double dt = time - most_recent_update_time;
-
-            double new_yaw = yaw_ + d_yaw_ * dt;
-
-            double new_d_x = d_x_ + d2_x_ * dt;
-            // double new_d_y = d_y_ + d2_y_ * dt;
-
-            double new_x = x_ + d_x_ * cos(yaw_) * dt + .5 * d2_x_ * cos(yaw_) * dt * dt;
-            double new_y = y_ + d_x_ * sin(yaw_) * dt + .5 * d2_x_ * sin(yaw_) * dt * dt;
-
-            // double new_x = x_ + d_x_ * cos(yaw_) * dt;
-            // double new_y = y_ + d_x_ * sin(yaw_) * dt;
+            double cos_yaw = std::cos(yaw);
+            double sin_yaw = std::sin(yaw);
 
             V new_state = this->state;
 
-            new_state[state::x] = new_x;
-            new_state[state::y] = new_y;
-            new_state[state::d_x] = new_d_x;
-            // new_state[state::d_y] = new_d_y;
-            new_state[state::yaw] = new_yaw;
+            new_state[ state::x ] += speed * cos_yaw * dt + 0.5 * accel * cos_yaw * dt * dt;
+            new_state[ state::y ] += speed * sin_yaw * dt + 0.5 * accel * sin_yaw * dt * dt;
+            new_state[state::d_x]  = speed + accel * dt;
+            // new_state[state::d_y] += state[state::d2_y] * dt;
+            new_state[state::yaw] += d_yaw * dt;
 
             return new_state;
         }
 
         // Update Jacobian definition
         M CartesianModel::update_jacobian(double dt) {
-            // Extract state definitions
-            double x_ = state[state::x];
-            double y_ = state[state::y];
-            double d_x_ = state[state::d_x];
-            double d_y_ = state[state::d_y];
-            double d2_x_ = state[state::d2_x];
-            double d2_y_ = state[state::d2_y];
-            double yaw_ = state[state::yaw];
-            double tau_ = state[state::tau];
+            double yaw = state[state::yaw];
+            double speed = state[state::d_x];
 
             M F_k = MatrixXd::Identity(S, S);
 
-            F_k(state::x, state::d_x) = cos(yaw_) * dt;
-            F_k(state::y, state::d_y) = sin(yaw_) * dt;
+            double cos_yaw = std::cos(yaw);
+            double sin_yaw = std::sin(yaw);
 
-            F_k(state::x, state::d2_x) = .5 * dt * dt;
-            F_k(state::y, state::d2_x) = .5 * dt * dt;
+            // partials for x, y, d_x, yaw
+            F_k(state::x, state::d_x) = cos_yaw * dt;
+            F_k(state::y, state::d_y) = sin_yaw * dt;
 
-            F_k(state::x, state::yaw) = -dt * d_x_ * sin(yaw_);
-            F_k(state::y, state::yaw) = dt * d_x_ * cos(yaw_);
+            F_k(state::x, state::d2_x) = 0.5 * dt * dt;
+            F_k(state::y, state::d2_x) = 0.5 * dt * dt;
+
+            F_k(state::x, state::yaw) = -dt * speed * sin_yaw;
+            F_k(state::y, state::yaw) = dt * speed * cos_yaw;
 
             F_k(state::d_x, state::d2_x) = dt;
             // F_k(state::d_y, state::d2_y) = dt;

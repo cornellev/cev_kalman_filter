@@ -55,6 +55,15 @@ namespace ckf {
          */
         virtual M state_matrix_multiplier() = 0;
 
+        /**
+         * Initialize if needed and time is valid.
+         *
+         * @param new_time Time to initialize the model with
+         *
+         * @return True if already initialized, false if time invalid or just initialized 
+         */
+        bool ready_for_update(double new_time);
+
     public:
         /**
          * Base class for an EKF state update model
